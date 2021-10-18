@@ -1,5 +1,4 @@
-import discord
-from discord.ext import commands
+from nextcord.ext import commands
 
 import roles_config
 from access_config import settings as settings
@@ -14,13 +13,17 @@ async def on_ready():
 
 @client.command()
 async def help(ctx):
-    print('[LOG] called command "help"')
+    user = ctx.author
+    print(f'[LOG] {user} called command "help"')
     await ctx.send("Custom help command")
+    await ctx.message.add_reaction('✅')
+    await ctx.message.delete(delay=5)
     print('[LOG] Help command done!')
 
 
 @client.command()
-async def tank(ctx, user: discord.Member):
+async def tank(ctx):
+    user = ctx.author
     print(f'[LOG] {user} called command "tank"')
     guild = client.get_guild(settings['guildId'])
     await user.add_roles(guild.get_role(roles_config.unit_roles['tanks']))
@@ -30,7 +33,8 @@ async def tank(ctx, user: discord.Member):
 
 
 @client.command()
-async def plane(ctx, user: discord.Member):
+async def plane(ctx):
+    user = ctx.author
     print(f'[LOG] {user} called command "plane"')
     guild = client.get_guild(settings['guildId'])
     await user.add_roles(guild.get_role(roles_config.unit_roles['planes']))
@@ -40,7 +44,8 @@ async def plane(ctx, user: discord.Member):
 
 
 @client.command()
-async def ship(ctx, user: discord.Member):
+async def ship(ctx):
+    user = ctx.author
     print(f'[LOG] {user} called command "ship"')
     guild = client.get_guild(settings['guildId'])
     await user.add_roles(guild.get_role(roles_config.unit_roles['ship']))
@@ -48,10 +53,46 @@ async def ship(ctx, user: discord.Member):
     await ctx.message.delete(delay=5)
     print('[LOG] Set role "Ship" command done!')
 
+
 @client.command()
 async def rules():
     pass
 
 
+@commands.has_any_role(roles_config.discord_roles['admin'])
+@client.command()
+async def clear(ctx):
+    user = ctx.author
+    print(f'[LOG] {user} called command "clear"')
+    pass
+
+
+@client.command()
+async def rb(ctx, nickname):
+    user = ctx.author
+    print(f'[LOG] {user} called command "rb"')
+    link = "https://thunderskill.com/userbars/z/e/" + nickname + "/ru-1-combined-r.png"
+    await ctx.send(link)
+    print('[LOG] "rb" command done!')
+
+
+@client.command()
+async def sb(ctx, nickname):
+    user = ctx.author
+    print(f'[LOG] {user} called command "sb"')
+    # driver = webdriver.Chrome()
+    # driver.get(f"https://thunderskill.com/ru/stat/{nickname}")
+    # button = driver.find_element_by_xpath('/html/body/div[3]/main/div/div/div/div[1]/div/button')
+    # button.click()
+
+    link = f"https://thunderskill.com/userbars/z/e/{nickname}/ru-1-combined-s.png"
+    await ctx.send(link)
+
+    print('[LOG] "sb" command done!')
+
+
+@client.command()
+async def test(ctx):
+    pass
 
 client.run(settings['botToken'])
