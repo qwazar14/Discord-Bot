@@ -1,10 +1,12 @@
 import nextcord as discord
 from nextcord.ext import commands
+import sqlite3
 
-import bot.core.modules.card_generator as card_generator
-import bot.core.modules.help_message as help_message
-import bot.core.modules.parse_stats as parse_stats
-import bot.core.modules.units_roles as units_roles
+import bot.core.modules.backend_commands.message_transformation as message_transformation
+import bot.core.modules.user.card_generator as card_generator
+import bot.core.modules.user.help_message as help_message
+import bot.core.modules.user.parse_stats as parse_stats
+import bot.core.modules.user.units_roles as units_roles
 from bot.core.configs import roles_config
 from bot.core.configs.access_config import settings
 
@@ -43,19 +45,6 @@ async def plane(ctx):
 
 
 @client.command()
-async def rules():
-    pass
-
-
-@commands.has_any_role(roles_config.discord_roles['admin'])
-@client.command()
-async def clear(ctx):
-    user = ctx.author
-    print(f'[LOG] {user} called command "clear"')
-    pass
-
-
-@client.command()
 async def rb(ctx, nickname: discord.Member = None):
     user = ctx.author
     print(f'[LOG] {user} called command "rb"')
@@ -77,6 +66,28 @@ async def card(ctx, user: discord.Member = None):
     print(f'[LOG] {log_user} called command "card"')
     await card_generator.card(ctx, user, client)
     print('[LOG] "card" command done!')
+
+
+@commands.has_any_role(roles_config.discord_roles['admin'])
+@client.command()
+async def clear(ctx, amount):
+    user = ctx.author
+    print(f'[LOG] {user} called command "clear"')
+    await message_transformation.clear_some_messages(ctx, amount)
+
+
+@commands.has_any_role(roles_config.discord_roles['admin'])
+@client.command()
+async def rules(ctx):
+    user = ctx.author
+    print(f'[LOG] {user} called command "rules"')
+    await message_transformation.send_rules_to_the_channel(ctx)
+    print('[LOG] "rules" command done!')
+
+
+@client.command()
+async def stamp(ctx):
+    conn = sqlite3.connect('orders.db')
 
 
 client.run(settings['botToken'])

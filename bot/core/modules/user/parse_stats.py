@@ -9,6 +9,7 @@ async def get_statistics(ctx, nickname, mode):
     nickname = nickname.split('] ')
     nickname = nickname[1].split(' (')
     nickname = nickname[0]
-    print(nickname)
+
     link = f"https://thunderskill.com/userbars/z/e/{nickname}/ru-1-combined-{mode}.png"
+    print(link)
     return await ctx.send(link)
