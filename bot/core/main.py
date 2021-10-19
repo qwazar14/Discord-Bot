@@ -1,7 +1,9 @@
+import nextcord as discord
 from nextcord.ext import commands
-
+from PIL import Image, ImageDraw
 import roles_config
 from access_config import settings as settings
+
 
 client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
 
@@ -92,7 +94,17 @@ async def sb(ctx, nickname):
 
 
 @client.command()
-async def test(ctx):
-    pass
+async def card(ctx, user: discord.Member = None):
+    guild = client.get_guild(settings['guildId'])
+    size = (90,90,)
+    mask = Image.new('L', size, 0)
+    draw = ImageDraw.Draw(mask)
 
+    if user is None:
+        user = ctx.author
+
+    backgroundImage = Image.open(r'assets/images/background/resumeBackground.png')
+    idraw = ImageDraw.Draw(backgroundImage)
+    # await ctx.send(file=discord.File(fp=idraw, filename='card.png'))
+    await ctx.send(file=discord.File(backgroundImage))
 client.run(settings['botToken'])
