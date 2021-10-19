@@ -1,7 +1,7 @@
 settings = {
-    'botToken': 'ODk5Njg3MjY1NjU0MTQ5MTUx.YW2ZDw.Qykl9kv-tLyk0OVBhtk5fiBtJJ8',
-    'botName': 'Warthunder Bot',
-    'botId': 899687265654149151,
-    'botPrefix': '!',
+    'botToken': 'OTAwMDQ5OTIzMzg5NjYxMzA1.YW7qzw.i7Te8w1Ugup4aZni7wrf2XAi6Oc',
+    'botName': 'Romank99 Test bot',
+    'botId': 900049923389661305,
+    'botPrefix': '+',
     'guildId': 821674992370581554
 }
