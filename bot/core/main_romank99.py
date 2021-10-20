@@ -14,7 +14,6 @@ async def on_ready():
 
 class Roles(discord.ui.View):
     def __init__(self):
-        super().__init__()
         self.value = None
 
     @discord.ui.button(label = 'Plane', style=discord.ButtonStyle.green)
