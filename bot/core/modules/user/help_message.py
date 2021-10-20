@@ -1,4 +1,4 @@
-import bot.core.modules.utils.clear_user_message as clear_user_message
+import modules.utils.clear_user_message as clear_user_message
 
 
 async def send_help_message(ctx):

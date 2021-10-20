@@ -3,7 +3,8 @@ from nextcord import Embed
 from nextcord.ext import commands, menus
 import sqlite3
 
-# import pyp3
+
+
 
 import bot.core.modules.backend_commands.message_transformation as message_transformation
 import bot.core.modules.user.card_generator as card_generator
@@ -14,6 +15,7 @@ import bot.core.modules.utils.log_command as log_command
 import bot.core.modules.utils.error_controller as error_controller
 from bot.core.configs import roles_config
 from bot.core.configs.access_config import settings
+
 
 client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
 

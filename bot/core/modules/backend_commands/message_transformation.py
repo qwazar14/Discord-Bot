@@ -1,6 +1,6 @@
 import nextcord
 
-from bot.core.modules.utils import clear_user_message
+from modules.utils import clear_user_message
 
 
 async def clear_some_messages(ctx, amount):
