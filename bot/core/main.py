@@ -73,7 +73,26 @@ async def card(ctx, user: discord.Member = None):
 async def clear(ctx, amount):
     user = ctx.author
     print(f'[LOG] {user} called command "clear"')
-    await message_transformation.clear_some_messages(ctx, amount)
+    try:
+        await ctx.channel.purge(limit=amount+1)
+        embed = discord.Embed (
+            description=f"Очищено {amount} сообщ.", 
+            color = 0xe871ff
+            )
+        audit_embed = discord.Embed(
+            title="Чистка сообщений!", color=0xe871ff
+        )
+        audit_embed.add_field(name='Модератор', value=ctx.author.mention)
+        audit_embed.add_field(name='Канал', value=ctx.channel.mention)
+        audit_embed.add_field(name='Количество', value=amount)
+        await ctx.send (embed=embed, delete_after=4 )
+    except:
+        embed = discord.Embed (
+            title=f"Ошибка доступа!", 
+            description=f"У меня нету прав на удаление сообщений!", 
+            color = ctx.author.color
+            )
+        await ctx.send (embed=embed, delete_after=4)
 
 
 @commands.has_any_role(roles_config.discord_roles['admin'])
@@ -83,7 +102,6 @@ async def rules(ctx):
     print(f'[LOG] {user} called command "rules"')
     await message_transformation.send_rules_to_the_channel(ctx)
     print('[LOG] "rules" command done!')
-
 
 @client.command()
 async def stamp(ctx):
