@@ -3,3 +3,4 @@ bot/core/__pycache__/access_config.cpython-39.pyc
 /bot/core/fonts/
 /bot/core/configs/
 /.idea/
+*.pyc
