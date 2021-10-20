@@ -2,11 +2,13 @@ import bot.core.modules.utils.create_embed as create_embed
 
 
 async def user_has_no_roles(ctx):
+    user = ctx.author
     await ctx.message.add_reaction('❌')
-    return await create_embed.display_embed(ctx,
-                                            f"{ctx.author} Title",
-                                            "Description"
-                                            )
+    await ctx.send(f"||{user.mention}||")
+    await create_embed.display_embed(ctx,
+                                     f"Role Error",
+                                     f"{user.mention} has no roles"
+                                     )
 
 
 async def user_send_invalid_argument():
