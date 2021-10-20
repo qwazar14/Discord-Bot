@@ -1,3 +1,4 @@
+import re
 from bot.core.modules.utils import clear_user_message
 
 
