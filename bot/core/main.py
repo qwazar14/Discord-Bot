@@ -2,13 +2,13 @@ import nextcord as discord
 from nextcord.ext import commands
 import sqlite3
 
-import bot.core.modules.backend_commands.message_transformation as message_transformation
-import bot.core.modules.user.card_generator as card_generator
-import bot.core.modules.user.help_message as help_message
-import bot.core.modules.user.parse_stats as parse_stats
-import bot.core.modules.user.units_roles as units_roles
-from bot.core.configs import roles_config
-from bot.core.configs.access_config import settings
+import modules.backend_commands.message_transformation as message_transformation
+import modules.user.card_generator as card_generator
+import modules.user.help_message as help_message
+import modules.user.parse_stats as parse_stats
+import modules.user.units_roles as units_roles
+from configs import roles_config
+from configs.access_config import settings
 
 client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
 
