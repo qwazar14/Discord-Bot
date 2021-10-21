@@ -1,8 +1,8 @@
 import re
-import response as response
+
+import requests
 
 from bot.core.modules.utils import message_transformation
-import requests
 
 
 async def get_statistics(ctx, nickname, mode):

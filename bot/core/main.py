@@ -1,16 +1,16 @@
 import nextcord as discord
 from nextcord.ext import commands
+from nextcord.ext.commands import errors
 
-import bot.core.modules.utils.message_transformation as message_transformation
 import bot.core.modules.user.card_generator as card_generator
 import bot.core.modules.user.help_message as help_message
 import bot.core.modules.user.parse_stats as parse_stats
 import bot.core.modules.user.units_roles as units_roles
-import bot.core.modules.utils.log_command as log_command
 import bot.core.modules.utils.error_controller as error_controller
+import bot.core.modules.utils.log_command as log_command
+import bot.core.modules.utils.message_transformation as message_transformation
 from bot.core.configs import roles_config
 from bot.core.configs.access_config import settings
-
 
 client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
 
@@ -24,66 +24,67 @@ async def on_ready():
 async def help(ctx):
     # user = ctx.author
     # print(f'[LOG] {user} called command "help"')
-    await log_command.command_start(ctx, "help")
+    await log_command.command_start(ctx)
     await help_message.send_help_message(ctx)
-    await log_command.command_done("help")
+    await log_command.command_done(ctx)
 
 
 @client.command()
 async def tank(ctx):
     user = ctx.author
-    await log_command.command_start(ctx, "tank")
+    await log_command.command_start(ctx)
     guild_id = client.get_guild(settings['guildId'])
     await units_roles.add_role_tank(ctx, user, guild_id)
-    print('[LOG] Set role "Tank" command done!')
-    await log_command.command_done("tank")
+    await log_command.command_done(ctx)
 
 
 @client.command()
 async def plane(ctx):
     user = ctx.author
-    await log_command.command_start(ctx, "plane")
+    await log_command.command_start(ctx)
     guild_id = client.get_guild(settings['guildId'])
     await units_roles.add_role_plane(ctx, user, guild_id)
-    await log_command.command_done("plane")
+    await log_command.command_done(ctx)
 
 
 @client.command()
 async def rb(ctx, nickname: discord.Member = None):
     user = ctx.author
-    await log_command.command_start(ctx, "rb")
+    await log_command.command_start(ctx)
     await parse_stats.get_statistics(ctx, nickname, 'r')
-    await log_command.command_done("rb")
+    await log_command.command_done(ctx)
 
 
 @client.command()
 async def sb(ctx, nickname: discord.Member = None):
     user = ctx.author
-    await log_command.command_start(ctx, "sb")
+    await log_command.command_start(ctx)
     await parse_stats.get_statistics(ctx, nickname, 's')
-    await log_command.command_done("sb")
+    await log_command.command_done(ctx)
 
 
 @client.command()
 async def card(ctx, user: discord.Member = None):
     log_user = ctx.author
-    await log_command.command_start(ctx, "card")
+    await log_command.command_start(ctx)
     await card_generator.card(ctx, user, client)
-    await log_command.command_done("card")
+    await log_command.command_done(ctx)
 
 
 @commands.has_any_role(roles_config.discord_roles['admin'])
 @client.command()
 async def clear(ctx, amount):
-    await log_command.command_start(ctx, "clear")
+    await log_command.command_start(ctx)
     await message_transformation.clear_some_messages(ctx, amount)
-    await log_command.command_done("clear")
+    await log_command.command_done(ctx)
+
 
 @client.command()
 async def t(ctx):
-    await log_command.command_start(ctx, "t")
+    await log_command.command_start(ctx)
     await error_controller.user_has_no_roles(ctx)
-    await log_command.command_done("t")
+    await log_command.command_done(ctx)
+
 
 # @commands.has_any_role(roles_config.discord_roles['admin'])
 # @client.command()
