@@ -1,12 +1,7 @@
 import nextcord as discord
-from nextcord import Embed
-from nextcord.ext import commands, menus
-import sqlite3
+from nextcord.ext import commands
 
-
-
-
-import bot.core.modules.backend_commands.message_transformation as message_transformation
+import bot.core.modules.utils.message_transformation as message_transformation
 import bot.core.modules.user.card_generator as card_generator
 import bot.core.modules.user.help_message as help_message
 import bot.core.modules.user.parse_stats as parse_stats
@@ -74,19 +69,21 @@ async def card(ctx, user: discord.Member = None):
     log_user = ctx.author
     await log_command.command_start(ctx, "card")
     await card_generator.card(ctx, user, client)
-    print('[LOG] "card" command done!')
+    await log_command.command_done("card")
 
 
 @commands.has_any_role(roles_config.discord_roles['admin'])
 @client.command()
 async def clear(ctx, amount):
-    user = ctx.author
     await log_command.command_start(ctx, "clear")
     await message_transformation.clear_some_messages(ctx, amount)
+    await log_command.command_done("clear")
 
 @client.command()
 async def t(ctx):
+    await log_command.command_start(ctx, "t")
     await error_controller.user_has_no_roles(ctx)
+    await log_command.command_done("t")
 
 # @commands.has_any_role(roles_config.discord_roles['admin'])
 # @client.command()
