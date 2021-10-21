@@ -1,21 +1,18 @@
 import nextcord as discord
-from nextcord import Embed
-from nextcord.ext import commands, menus
-import sqlite3
+from nextcord.ext import commands
+from nextcord.ext.commands import errors
 
-import os
+import bot.core.modules.user.card_generator as card_generator
+import bot.core.modules.user.help_message as help_message
+import bot.core.modules.user.parse_stats as parse_stats
+import bot.core.modules.user.units_roles as units_roles
+import bot.core.modules.utils.error_controller as error_controller
+import bot.core.modules.utils.log_command as log_command
+import bot.core.modules.utils.message_transformation as message_transformation
+from bot.core.configs import roles_config
+from bot.core.configs.access_config import settings
 
-import modules.backend_commands.message_transformation as message_transformation
-import modules.user.card_generator as card_generator
-import modules.user.help_message as help_message
-import modules.user.parse_stats as parse_stats
-import modules.user.units_roles as units_roles
-import modules.utils.log_command as log_command
-import modules.utils.error_controller as error_controller
-from configs import roles_config
-from configs.access_config import settings
-
-client = commands.Bot(command_prefix=settings['botPrefix'])
+client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
 
 
 @client.event
@@ -29,12 +26,9 @@ async def on_command(ctx):
 '''@client.command()
 async def help(ctx):
     # user = ctx.author
-    # print(f'[LOG] {user} called command "help"')
     await help_message.send_help_message(ctx)
 '''
 
-
-@commands.has_any_role(roles_config.discord_roles['admin'])
 @client.command()
 async def rules(ctx):
     await message_transformation.send_rules_to_the_channel(ctx)
@@ -113,9 +107,7 @@ async def load(ctx, extension):
             await ctx.send(f"**{extension}** loaded!")
     if result != "":
         await ctx.send(result)
-
-
-
+        
 # @commands.has_any_role(roles_config.discord_roles['admin'])
 # @client.command()
 # async def rules(ctx):

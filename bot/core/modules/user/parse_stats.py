@@ -1,12 +1,14 @@
 import re
-import response as response
 
 from modules.utils import clear_user_message
+
 import requests
+
+from bot.core.modules.utils import message_transformation
 
 
 async def get_statistics(ctx, nickname, mode):
-    await clear_user_message.clear_last_user_message(ctx)
+    await message_transformation.clear_last_user_message(ctx)
     if nickname is None:
         nickname = ctx.author.nick
     # Git позязя заработай
