@@ -1,4 +1,4 @@
-import bot.core.modules.utils.create_embed as create_embed
+import modules.utils.create_embed as create_embed
 
 
 async def user_has_no_roles(ctx):

@@ -1,7 +1,7 @@
 import re
 import response as response
 
-from bot.core.modules.utils import clear_user_message
+from modules.utils import clear_user_message
 import requests
 
 
