@@ -1,5 +1,7 @@
 import re
 
+from modules.utils import clear_user_message
+
 import requests
 
 from bot.core.modules.utils import message_transformation

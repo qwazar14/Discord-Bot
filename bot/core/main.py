@@ -19,73 +19,95 @@ client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
 async def on_ready():
     print('[LOG] Bot is ready!')
 
+@client.event
+async def on_command(ctx):
+    print(f'[LOG] {ctx.author} called command {ctx.command}:\nArgs: {ctx.args}\nKwargs: {ctx.kwargs}')
 
-@client.command()
+'''@client.command()
 async def help(ctx):
     # user = ctx.author
-    # print(f'[LOG] {user} called command "help"')
-    await log_command.command_start(ctx)
     await help_message.send_help_message(ctx)
-    await log_command.command_done(ctx)
-
-
-@client.command()
-async def tank(ctx):
-    user = ctx.author
-    await log_command.command_start(ctx)
-    guild_id = client.get_guild(settings['guildId'])
-    await units_roles.add_role_tank(ctx, user, guild_id)
-    await log_command.command_done(ctx)
-
+'''
 
 @client.command()
-async def plane(ctx):
-    user = ctx.author
-    await log_command.command_start(ctx)
-    guild_id = client.get_guild(settings['guildId'])
-    await units_roles.add_role_plane(ctx, user, guild_id)
-    await log_command.command_done(ctx)
-
-
-@client.command()
-async def rb(ctx, nickname: discord.Member = None):
-    user = ctx.author
-    await log_command.command_start(ctx)
-    await parse_stats.get_statistics(ctx, nickname, 'r')
-    await log_command.command_done(ctx)
-
-
-@client.command()
-async def sb(ctx, nickname: discord.Member = None):
-    user = ctx.author
-    await log_command.command_start(ctx)
-    await parse_stats.get_statistics(ctx, nickname, 's')
-    await log_command.command_done(ctx)
-
-
-@client.command()
-async def card(ctx, user: discord.Member = None):
-    log_user = ctx.author
-    await log_command.command_start(ctx)
-    await card_generator.card(ctx, user, client)
-    await log_command.command_done(ctx)
-
-
-@commands.has_any_role(roles_config.discord_roles['admin'])
-@client.command()
-async def clear(ctx, amount):
-    await log_command.command_start(ctx)
-    await message_transformation.clear_some_messages(ctx, amount)
-    await log_command.command_done(ctx)
-
+async def rules(ctx):
+    await message_transformation.send_rules_to_the_channel(ctx)
 
 @client.command()
 async def t(ctx):
-    await log_command.command_start(ctx)
     await error_controller.user_has_no_roles(ctx)
-    await log_command.command_done(ctx)
 
+@commands.has_any_role(roles_config.discord_roles['admin'])
+@client.command()
+async def reload(ctx, extension):
+    result = ""
+    if extension == "all":
+        for filename in os.listdir("./cogs"):
+            if filename.endswith(".py") and filename != "db.py":
+                try:
+                    client.unload_extension(f"cogs.{filename[:-3]}")
+                    client.load_extension(f"cogs.{filename[:-3]}")
+                except Exception as e:
+                    result += f"[ERROR] reload **{filename}:** {e}\n"
+                else:
+                    result += f"**{filename[:-3]}** reloaded!\n"
+    else:
+        try:
+            client.unload_extension(f"cogs.{extension}")
+            client.load_extension(f"cogs.{extension}")
+        except Exception as e:
+            result += f"Error reload **{extension}:** {e}\n\n"
+        else:
+            await ctx.send(f"**{extension}** reloaded!")
+    if result != "":
+        await ctx.send(result)
 
+@commands.has_any_role(roles_config.discord_roles['admin'])
+@client.command()
+async def unload(ctx, extension):
+    result = ""
+    if extension == "all":
+        for filename in os.listdir("./cogs"):
+            if filename.endswith(".py") and filename != "db.py":
+                try:
+                    client.unload_extension(f"cogs.{filename[:-3]}")
+                except Exception as e:
+                    result += f"[ERROR] unload **{filename}:** {e}\n"
+                else:
+                    result += f"**{filename[:-3]}** unloaded!\n"
+    else:
+        try:
+            client.unload_extension(f"cogs.{extension}")
+        except Exception as e:
+            result += f"[ERROR] unload **{extension}:** {e}\n\n"
+        else:
+            await ctx.send(f"**{extension}** unloaded!")
+    if result != "":
+        await ctx.send(result)
+
+@commands.has_any_role(roles_config.discord_roles['admin'])
+@client.command()
+async def load(ctx, extension):
+    result = ""
+    if extension == "all":
+        for filename in os.listdir("./cogs"):
+            if filename.endswith(".py") and filename != "db.py":
+                try:
+                    client.load_extension(f"cogs.{filename[:-3]}")
+                except Exception as e:
+                    result += f"[ERROR] load **{filename}:** {e}\n\n"
+                else:
+                    await ctx.send(f"**{filename[:-3]}** loaded!")
+    else:
+        try:
+            client.load_extension(f"cogs.{extension}")
+        except Exception as e:
+            result += f"[ERROR] load **{extension}:** {e}\n\n"
+        else:
+            await ctx.send(f"**{extension}** loaded!")
+    if result != "":
+        await ctx.send(result)
+        
 # @commands.has_any_role(roles_config.discord_roles['admin'])
 # @client.command()
 # async def rules(ctx):
