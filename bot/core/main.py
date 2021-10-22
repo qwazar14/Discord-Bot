@@ -28,17 +28,18 @@ async def up(ctx):
 
         @discord.ui.button(label = 'Повысить', style = nextcord.ButtonStyle.green)
         async def rank_up(self, button, interaction):
-            new_rank= RankSystem.get_next_member_rank(ctx.author)
+            new_rank = RankSystem.get_next_member_rank(ctx.author)
             if interaction.user == ctx.author:
                 await interaction.response.send_message(content='Вы не можете повысить самого себя!',ephemeral=True)   
                 return
-            if not RankSystem.if_member_can_up_officers(interaction.user):
-                await interaction.response.send_message(content='Вы не можете повышать офицеров!',ephemeral=True)   
-                return
-            if not RankSystem.if_rank_member1_above_member2(interaction.user, ctx.author):
+            if new_rank in RankSystem.get_officers_ranks_id():
+                if not RankSystem.if_member_can_up_officers(interaction.user):
+                    await interaction.response.send_message(content='Вы не можете повышать офицеров!',ephemeral=True)   
+                    return
+            if not RankSystem.if_rank_member1_above_member2(ctx.author, interaction.user):
                 await interaction.response.send_message(content='Вы не можете повышать игроков, у которых ранг выше вашего!',ephemeral=True)   
                 return
-            await ctx.author.remove_roles(ctx.guild.get_role(rank))
+            await ctx.author.remove_roles(ctx.guild.get_role(RankSystem.get_rank_id_by_name(rank)))
             await ctx.author.add_roles(ctx.guild.get_role(new_rank))
             await ctx.author.send('Ваc повысили.')
             self.clear_items()
@@ -72,6 +73,7 @@ async def up(ctx):
 
     view = RankSys()
     rank = RankSystem.get_member_rank(ctx.author, str=True)
+    print(f'RAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANK: {rank}')
     now = datetime.datetime.now(datetime.timezone.utc)
 
     if rank in ['OF-8','OF-9','OF-10']:
