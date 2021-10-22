@@ -77,7 +77,7 @@ def get_previous_member_rank(member, str=False):
 
 
 def get_rank_id_by_name(name):
-    return get_all_ranks_dict.keys()[get_all_ranks_dict().values().index(name)]
+    return list(get_all_ranks_dict().keys())[list(get_all_ranks_dict().values()).index(name)]
 
 def get_rank_name_by_id(id):
     return get_all_ranks_dict()[id]
