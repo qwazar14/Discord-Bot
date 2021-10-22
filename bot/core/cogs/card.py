@@ -5,6 +5,8 @@ from nextcord.ext import commands
 from nextcord.ext.commands.cog import Cog
 from configs.access_config import settings
 from modules.user import units_roles, parse_stats, card_generator
+
+
 class Card(Cog):
 
     def __init__(self, client):
