@@ -1,4 +1,4 @@
-from bot.core.modules.utils.message_transformation import clear_last_user_message
+from modules.utils.message_transformation import clear_last_user_message
 
 
 async def send_help_message(ctx):
