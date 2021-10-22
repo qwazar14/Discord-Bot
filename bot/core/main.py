@@ -1,26 +1,25 @@
 import datetime
-from typing import Union
-
-import nextcord as discord
-from nextcord import role
-from nextcord import components
 import nextcord
-from nextcord.components import ActionRow, Button
+import nextcord as discord
+
+
 from nextcord.ext import commands
-from nextcord.ext.commands import errors
-from nextcord.types.components import ButtonComponent, ButtonStyle
-from nextcord.ui import Button
+
 import modules.user.card_generator as card_generator
 import modules.user.help_message as help_message
 import modules.user.parse_stats as parse_stats
 import modules.user.units_roles as units_roles
 import modules.utils.error_controller as error_controller
-import modules.utils.log_command as log_command
 import modules.utils.message_transformation as message_transformation
+import modules.utils.ranks as RankSystem
 from configs import roles_config
 from configs.access_config import settings
 
 client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
+
+
+
+    
 
 @client.command()
 async def up(ctx):
@@ -29,27 +28,56 @@ async def up(ctx):
 
         @discord.ui.button(label = 'Повысить', style = nextcord.ButtonStyle.green)
         async def rank_up(self, button, interaction):
-            button.disabled = True
-            self.up = True
+            new_rank= RankSystem.get_next_member_rank(ctx.author)
+            if interaction.user == ctx.author:
+                await interaction.response.send_message(content='Вы не можете повысить самого себя!',ephemeral=True)   
+                return
+            if not RankSystem.if_member_can_up_officers(interaction.user):
+                await interaction.response.send_message(content='Вы не можете повышать офицеров!',ephemeral=True)   
+                return
+            if not RankSystem.if_rank_member1_above_member2(interaction.user, ctx.author):
+                await interaction.response.send_message(content='Вы не можете повышать игроков, у которых ранг выше вашего!',ephemeral=True)   
+                return
+            await ctx.author.remove_roles(ctx.guild.get_role(rank))
+            await ctx.author.add_roles(ctx.guild.get_role(new_rank))
+            await ctx.author.send('Ваc повысили.')
+            self.clear_items()
+            embed = message.embeds[0]
+            embed.color = 0x38a22a
+            embed.title = 'Принято'
+            await message.edit(embed=embed,view=self)
             self.stop()
 
         @discord.ui.button(label = 'Отказ', style = nextcord.ButtonStyle.red)
         async def deny(self, button, interaction):
-            button.disabled = True
-            self.up = False
+            if interaction.user == ctx.author:
+                await interaction.response.send_message(content='Вы не можете повысить самого себя!',ephemeral=True)   
+                return
+            if not RankSystem.if_member_can_up_officers(interaction.user):
+                await interaction.response.send_message(content='Вы не можете повышать офицеров!',ephemeral=True)   
+                return
+            if not RankSystem.if_rank_member1_above_member2(interaction.user, ctx.author):
+                await interaction.response.send_message(content='Вы не можете повышать игроков, у которых ранг выше вашего!',ephemeral=True)   
+                return
+            await ctx.author.send('Вам отказали в повышение. Следующий запрос возможен через неделю.')
+            self.clear_items()
+            embed = message.embeds[0]
+            embed.color = 0xde3b3b
+            embed.title = 'Отказ'
+            await message.edit(embed=embed,view=self)
             self.stop()
 
+        
+
+
     view = RankSys()
-    all_roles_dict = roles_config.officer_roles | roles_config.soldier_roles
-    member_roles_set = set([role.id for role in ctx.author.roles])
-    rank_roles = list(all_roles_dict.keys())
-    role_id = list(member_roles_set.intersection(rank_roles))[0]
+    rank = RankSystem.get_member_rank(ctx.author, str=True)
     now = datetime.datetime.now(datetime.timezone.utc)
 
-    if all_roles_dict[role_id] in ['OF-8','OF-9','OF-10']:
-            await ctx.('Вы заняли максимальное звание в нашем полке. Подача заявки на повышение для вас закрыта.')
-            return
-
+    if rank in ['OF-8','OF-9','OF-10']:
+        await ctx.author.send('Вы заняли максимальное звание в нашем полке. Подача заявки на повышение для вас закрыта.')
+        return
+    
     timedelta = now - ctx.author.joined_at
     seconds = timedelta.total_seconds()
     days = seconds // 86400
@@ -58,20 +86,10 @@ async def up(ctx):
 
     datestr = f'{int(month)} месяцев и {int(days)} дней'
 
-    buttons = [Button(style=discord.ButtonStyle.success, label='Повысить'),Button(style=discord.ButtonStyle.danger, label='Отказ')]
-
-    embed=discord.Embed(title="Повышение", color=0xf2930d)
-    embed.add_field(name=f"Игрок {ctx.author.nick} запрашивает повышение.", value=f"Текущее звание: {all_roles_dict[role_id]}", inline=True)
+    embed=discord.Embed(title="Запрос на повышение", color=0xf2930d)
+    embed.add_field(name=f"Игрок {ctx.author.nick} запрашивает повышение.", value=f"Текущее звание: {rank}", inline=True)
     embed.set_footer(text=f"На сервере {datestr}")
-    await ctx.send(embed=embed, view=view)
-    await view.wait()
-    if view.up:
-        new_role_id = rank_roles[rank_roles.index(role_id)+1]
-        await ctx.author.remove_roles(ctx.guild.get_role(role_id))
-        await ctx.author.add_roles(ctx.guild.get_role(new_role_id))
-        await ctx.author.send('Ваc повысили.')
-    else:
-        await ctx.author.send('Вам отказали в повышение. Следующий запрос возможен через неделю.')
+    message = await ctx.send(embed=embed, view=view)
 
 
     
