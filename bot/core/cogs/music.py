@@ -7,7 +7,7 @@ from bot.core.modules.user import units_roles, parse_stats, card_generator
 
 from nextcord.utils import get
 from dotenv import load_dotenv
-from bot.core.modules.utils.music_converter import get_song_url, get_spotify_playlist
+from bot.core.modules.utils.music_converter import get_song_url
 import youtube_dl
 from nextcord import FFmpegPCMAudio
 
@@ -18,184 +18,165 @@ class Music(Cog):
 
     def __init__(self, client):
         self.client = client
+        self.queue = []
 
+    @commands.Cog.listener()
+    async def on_message(self, message):
 
-client = discord.Client()
+        prefix = "!"
+        if message.author == self.client.user:
+            return
 
-queue = []
+        msg = message.content.split()
 
+        voicechannel = message.author.voice.channel
+        if not voicechannel:
+            await message.channel.send("You need to be connected to a voice channel to call the bot!")
 
-@commands.Cog.listener()
-async def on_message(message):
-    prefix = "!"
-    if message.author == client.user:
-        return
+        voiceclient = get(self.client.voice_clients, guild=message.guild)
 
-    msg = message.content.split()
+        if msg[0] == prefix + 'join':
 
-    voice_channel = message.author.voice.channel
-    if not voice_channel:
-        await message.channel.send("You need to be connected to a voice channel to call the bot!")
+            # If bot is already connected, switch to the correct channel
 
-    voice_client = get(client.voice_clients, guild=message.guild)
+            if voiceclient and voiceclient.is_connected():
+                await voiceclient.move_to(voicechannel)
 
-    if msg[0] == prefix + 'join':
+            # if it's not connected, connect
+            else:
+                await voicechannel.connect()
 
-        # If bot is already connected, switch to the correct channel
+        elif msg[0] == prefix + 'dc':
 
-        if voice_client and voice_client.is_connected():
-            await voice_client.move_to(voice_channel)
+            if voiceclient.is_connected():
+                await voiceclient.disconnect()
+            await message.channel.send("Goodbye!")
 
-        # if it's not connected, connect
-        else:
-            await voice_channel.connect()
+        elif msg[0] == prefix + 'play':
 
-    elif msg[0] == prefix + 'dc':
+            if voiceclient and voiceclient.is_connected():
+                await voiceclient.move_to(voicechannel)
+            else:
+                await voicechannel.connect()
 
-        if voice_client.is_connected():
-            await voice_client.disconnect()
-        await message.channel.send("Goodbye!")
-
-    elif msg[0] == prefix + 'play':
-
-        if voice_client and voice_client.is_connected():
-            await voice_client.move_to(voice_channel)
-        else:
-            await voice_channel.connect()
-
-        voice_client = get(client.voice_clients, guild=message.guild)
-        YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
-        FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-                          'options': '-vn'}
-
-        if not voice_client.is_playing():
-
-            url = str(message.content)[len(msg[0]) + 1:]
-            # if it is a spotify link
-            if "spotify" in url:
-                # if it is a playlist
-                if "playlist" in url:
-                    queue.extend(get_spotify_playlist(url))
-                    url = get_song_url(queue.pop(0))
-                else:
-                    url = get_song_url(url)
-
-            with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
-                info = ydl.extract_info(url, download=False)
-            URL = info['url']
-            voice_client.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-            voice_client.is_playing()
-
-        else:
-            url = str(message.content)[len(msg[0]) + 1:]
-            if "spotify" in url:
-                if "playlist" in url:
-                    queue.extend(get_spotify_playlist(url))
-            queue.append(url)
-            await message.channel.send("Song added to queue!")
-
-
-
-    elif msg[0] == prefix + 'skip':
-
-        if queue:
-
-            url = queue.pop(0)
-
-            voice_client.stop()
-
+            voiceclient = get(self.client.voice_clients, guild=message.guild)
             YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
             FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
                               'options': '-vn'}
-            if "youtube" in url:
+
+            if not voiceclient.is_playing():
+
+                url = str(message.content)[len(msg[0]) + 1:]
+                # if it is a spotify link
+
+                url = get_song_url(url)
+
                 with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
                     info = ydl.extract_info(url, download=False)
                 URL = info['url']
-                voice_client = get(client.voice_clients, guild=message.guild)
-                voice_client.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-                voice_client.is_playing()
-
-            with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
-                info = ydl.extract_info(get_song_url(url), download=False)
-            URL = info['url']
-            title = info['title']
-            voice_client = get(client.voice_clients, guild=message.guild)
-            voice_client.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-            voice_client.is_playing()
-            await message.channel.send("Song skipped! Now playing: **" + title + "**")
-
-        else:
-
-            await message.channel.send("There are no more queued songs to skip to!")
-
-    elif msg[0] == prefix + "pause":
-        if voice_client.is_playing():
-            voice_client.pause()
-        await message.channel.send("Pausing...")
-
-    elif msg[0] == prefix + "resume":
-        if voice_client.is_paused():
-            voice_client.resume()
-
-        await message.channel.send("Resuming...")
-
-    elif msg[0] == prefix + "stop":
-        voice_client.stop()
-        await message.channel.send("Stopping...")
-
-    elif msg[0] == prefix + "queue":
-
-        if queue:
-            YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
-            reply = ""
-            if len(queue) > 10:
-
-                for i in range(0, 10):
-                    if "youtube" in queue[i]:
-                        with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
-                            info = ydl.extract_info(queue[i], download=False)
-                        title = info['title']
-                        reply += "**" + str(i + 1) + ".**   " + title + "\n"
-                    if "spotify" in queue[i]:
-                        url = get_song_url(queue[i])
-                        with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
-                            info = ydl.extract_info(url, download=False)
-                        title = info['title']
-                        reply += "**" + str(i + 1) + ".**   " + title + "\n"
-                    else:
-                        reply += "**" + str(i + 1) + ".**   " + queue[i] + "\n"
-
-                reply += "** More... **"
+                voiceclient.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+                voiceclient.is_playing()
 
             else:
-                for i in range(0, len(queue)):
-                    if "youtube" in queue[i]:
-                        with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
-                            info = ydl.extract_info(queue[i], download=False)
-                        title = info['title']
-                        reply += "**" + str(i + 1) + ".**   " + title + "\n"
-                    if "spotify" in queue[i]:
-                        url = get_song_url(queue[i])
-                        with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
-                            info = ydl.extract_info(url, download=False)
-                        title = info['title']
-                        reply += "**" + str(i + 1) + ".**   " + title + "\n"
-                    else:
-                        reply += "**" + str(i + 1) + ".**   " + queue[i] + "\n"
+                url = str(message.content)[len(msg[0]) + 1:]
 
-            await message.channel.send(reply)
+                self.queue.append(url)
+                await message.channel.send("Song added to queue!")
 
-        else:
-            await message.channel.send("Queue is empty at the moment!")
 
-    elif msg[0] == prefix + "clear":
 
-        queue.clear()
-        await message.channel.send("Queue cleared!")
+        elif msg[0] == prefix + 'skip':
 
-    elif msg[0] == prefix + "commands":
-        await message.channel.send(
-            "```\n!join - Bot will join your channel\n!dc - Bot will disconnect from your channel\n!play <url> - Bot will play the url, if it is already playing something, it will add it to a queue\n!skip - Bot will skip the track currently playing\n!pause - Bot will pause the track\n!stop - Bot will stop playing\n!queue - Bot will display the currently queued tracks\n!clear - Bot will clear all queued tracks\n```")
+            if self.queue:
+
+                url = self.queue.pop(0)
+
+                voiceclient.stop()
+
+                YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
+                FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                                  'options': '-vn'}
+                if "youtube" in url:
+                    with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
+                        info = ydl.extract_info(url, download=False)
+                    URL = info['url']
+                    voiceclient = get(self.client.voice_clients, guild=message.guild)
+                    voiceclient.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+                    voiceclient.is_playing()
+
+                with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
+                    info = ydl.extract_info(get_song_url(url), download=False)
+                URL = info['url']
+                title = info['title']
+                voiceclient = get(self.client.voice_clients, guild=message.guild)
+                voiceclient.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+                voiceclient.is_playing()
+                await message.channel.send("Song skipped! Now playing: **" + title + "**")
+
+            else:
+
+                await message.channel.send("There are no more queued songs to skip to!")
+
+        elif msg[0] == prefix + "pause":
+            if voiceclient.is_playing():
+                voiceclient.pause()
+            await message.channel.send("Pausing...")
+
+        elif msg[0] == prefix + "resume":
+            if voiceclient.is_paused():
+                voiceclient.resume()
+
+            await message.channel.send("Resuming...")
+
+        elif msg[0] == prefix + "stop":
+            voiceclient.stop()
+            await message.channel.send("Stopping...")
+
+        elif msg[0] == prefix + "queue":
+
+            if self.queue:
+                YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
+                reply = ""
+                if len(self.queue) > 10:
+
+                    for i in range(0, 10):
+                        if "youtube" in self.queue[i]:
+                            with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
+                                info = ydl.extract_info(self.queue[i], download=False)
+                            title = info['title']
+                            reply += "**" + str(i + 1) + ".**   " + title + "\n"
+
+                        reply += "**" + str(i + 1) + ".**   " + self.queue[i] + "\n"
+
+                    reply += "** More... **"
+
+                else:
+                    for i in range(0, len(self.queue)):
+                        if "youtube" in self.queue[i]:
+                            with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
+                                info = ydl.extract_info(self.queue[i], download=False)
+                            title = info['title']
+                            reply += "**" + str(i + 1) + ".**   " + title + "\n"
+
+                        reply += "**" + str(i + 1) + ".**   " + self.queue[i] + "\n"
+
+                await message.channel.send(reply)
+
+            else:
+                await message.channel.send("Queue is empty at the moment!")
+
+        elif msg[0] == prefix + "clear":
+
+            self.queue.clear()
+            await message.channel.send("Queue cleared!")
+
+        elif msg[0] == prefix + "commands":
+            await message.channel.send("```\n!join - Bot will join your channel\n!dc - Bot will disconnect from your "
+                                       "channel\n!play <url> - Bot will play the url, if it is already playing something, "
+                                       "it will add it to a queue\n!skip - Bot will skip the track currently "
+                                       "playing\n!pause - Bot will pause the track\n!stop - Bot will stop playing\n!queue "
+                                       "- Bot will display the currently queued tracks\n!clear - Bot will clear all "
+                                       "queued tracks\n```")
 
 
 def setup(bot):
