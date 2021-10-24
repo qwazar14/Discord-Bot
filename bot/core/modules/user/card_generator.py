@@ -4,8 +4,8 @@ import nextcord as discord
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-import configs.roles_config as roles_config
-from configs.access_config import settings as settings
+import bot.core.configs.roles_config as roles_config
+from bot.core.configs.access_config import settings as settings
 
 
 async def card(ctx, user, client):

@@ -7,9 +7,9 @@ import datetime
 import re
 import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from configs.bd_config import CONFIG
-from configs.access_config import settings as access_config
-from configs import roles_config
+from bot.core.configs.bd_config import CONFIG
+from bot.core.configs.access_config import settings as access_config
+from bot.core.configs import roles_config
 from nextcord.ext import commands, tasks
 from nextcord.utils import get
 from datetime import datetime, timedelta

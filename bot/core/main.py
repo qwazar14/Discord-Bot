@@ -1,4 +1,6 @@
 import datetime
+import os
+
 import nextcord
 import nextcord as discord
 
@@ -12,8 +14,8 @@ import modules.user.units_roles as units_roles
 import modules.utils.error_controller as error_controller
 import modules.utils.message_transformation as message_transformation
 import modules.utils.ranks as RankSystem
-from configs import roles_config
-from configs.access_config import settings
+from bot.core.configs import roles_config
+from bot.core.configs.access_config import settings
 
 client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
 
