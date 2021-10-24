@@ -26,11 +26,11 @@ class Card(Cog):
         await self.parse_stats.get_statistics(ctx, nickname, 'r')
 
     @commands.Cog.listener()
-    async def sb(ctx, nickname: discord.Member = None):
+    async def sb(self, ctx, nickname: discord.Member = None):
         await parse_stats.get_statistics(ctx, nickname, 's')
 
     @commands.Cog.listener()
-    async def card(ctx, user: discord.Member = None):
+    async def card(self, ctx, user: discord.Member = None):
         await card_generator.card(ctx, user, self.client)
 
 
