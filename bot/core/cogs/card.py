@@ -11,25 +11,25 @@ class Card(Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.Cog.listener()
+    @commands.command()
     async def tank(self, ctx):
         guild_id = self.client.get_guild(settings['guildId'])
         await units_roles.add_role_tank(ctx, ctx.author, guild_id)
 
-    @commands.Cog.listener()
+    @commands.command()
     async def plane(self, ctx):
         guild_id = self.client.get_guild(settings['guildId'])
         await units_roles.add_role_plane(ctx, ctx.author, guild_id)
 
-    @commands.Cog.listener()
+    @commands.command()
     async def rb(self, ctx, nickname: discord.Member = None):
         await self.parse_stats.get_statistics(ctx, nickname, 'r')
 
-    @commands.Cog.listener()
+    @commands.command()
     async def sb(self, ctx, nickname: discord.Member = None):
         await parse_stats.get_statistics(ctx, nickname, 's')
 
-    @commands.Cog.listener()
+    @commands.command()
     async def card(self, ctx, user: discord.Member = None):
         await card_generator.card(ctx, user, self.client)
 
