@@ -33,42 +33,42 @@ async def on_message(message):
 
     msg = message.content.split()
 
-    voicechannel = message.author.voice.channel
-    if not voicechannel:
+    voice_channel = message.author.voice.channel
+    if not voice_channel:
         await message.channel.send("You need to be connected to a voice channel to call the bot!")
 
-    voiceclient = get(client.voice_clients, guild=message.guild)
+    voice_client = get(client.voice_clients, guild=message.guild)
 
     if msg[0] == prefix + 'join':
 
         # If bot is already connected, switch to the correct channel
 
-        if voiceclient and voiceclient.is_connected():
-            await voiceclient.move_to(voicechannel)
+        if voice_client and voice_client.is_connected():
+            await voice_client.move_to(voice_channel)
 
         # if it's not connected, connect
         else:
-            await voicechannel.connect()
+            await voice_channel.connect()
 
     elif msg[0] == prefix + 'dc':
 
-        if voiceclient.is_connected():
-            await voiceclient.disconnect()
+        if voice_client.is_connected():
+            await voice_client.disconnect()
         await message.channel.send("Goodbye!")
 
     elif msg[0] == prefix + 'play':
 
-        if voiceclient and voiceclient.is_connected():
-            await voiceclient.move_to(voicechannel)
+        if voice_client and voice_client.is_connected():
+            await voice_client.move_to(voice_channel)
         else:
-            await voicechannel.connect()
+            await voice_channel.connect()
 
-        voiceclient = get(client.voice_clients, guild=message.guild)
+        voice_client = get(client.voice_clients, guild=message.guild)
         YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
         FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
                           'options': '-vn'}
 
-        if not voiceclient.is_playing():
+        if not voice_client.is_playing():
 
             url = str(message.content)[len(msg[0]) + 1:]
             # if it is a spotify link
@@ -83,8 +83,8 @@ async def on_message(message):
             with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
                 info = ydl.extract_info(url, download=False)
             URL = info['url']
-            voiceclient.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-            voiceclient.is_playing()
+            voice_client.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+            voice_client.is_playing()
 
         else:
             url = str(message.content)[len(msg[0]) + 1:]
@@ -102,7 +102,7 @@ async def on_message(message):
 
             url = queue.pop(0)
 
-            voiceclient.stop()
+            voice_client.stop()
 
             YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
             FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -111,17 +111,17 @@ async def on_message(message):
                 with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
                     info = ydl.extract_info(url, download=False)
                 URL = info['url']
-                voiceclient = get(client.voice_clients, guild=message.guild)
-                voiceclient.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-                voiceclient.is_playing()
+                voice_client = get(client.voice_clients, guild=message.guild)
+                voice_client.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+                voice_client.is_playing()
 
             with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
                 info = ydl.extract_info(get_song_url(url), download=False)
             URL = info['url']
             title = info['title']
-            voiceclient = get(client.voice_clients, guild=message.guild)
-            voiceclient.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-            voiceclient.is_playing()
+            voice_client = get(client.voice_clients, guild=message.guild)
+            voice_client.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+            voice_client.is_playing()
             await message.channel.send("Song skipped! Now playing: **" + title + "**")
 
         else:
@@ -129,18 +129,18 @@ async def on_message(message):
             await message.channel.send("There are no more queued songs to skip to!")
 
     elif msg[0] == prefix + "pause":
-        if voiceclient.is_playing():
-            voiceclient.pause()
+        if voice_client.is_playing():
+            voice_client.pause()
         await message.channel.send("Pausing...")
 
     elif msg[0] == prefix + "resume":
-        if voiceclient.is_paused():
-            voiceclient.resume()
+        if voice_client.is_paused():
+            voice_client.resume()
 
         await message.channel.send("Resuming...")
 
     elif msg[0] == prefix + "stop":
-        voiceclient.stop()
+        voice_client.stop()
         await message.channel.send("Stopping...")
 
     elif msg[0] == prefix + "queue":
