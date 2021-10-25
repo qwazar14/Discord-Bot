@@ -17,7 +17,7 @@ client = commands.Bot(command_prefix=settings['botPrefix'])
 
 @client.event
 async def on_ready():
-    print('[LOG] Bot is ready!')
+    print('[INFO] Bot is ready!')
 
 
 @client.event
@@ -31,7 +31,7 @@ async def on_member_join(member):
 
 @client.event
 async def on_command(ctx):
-    print(f'[LOG] {ctx.author} called command {ctx.command}:\nArgs: {ctx.args}\nKwargs: {ctx.kwargs}')
+    print(f'[INFO] {ctx.author} called command {ctx.command}:\nArgs: {ctx.args}\nKwargs: {ctx.kwargs}')
 
 
 '''@client.command()

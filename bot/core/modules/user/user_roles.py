@@ -15,8 +15,9 @@ async def add_util_categories(ctx, user, guild_id):
     await user.add_roles(guild_id.get_role(roles_config.util_categories['general_category']))
     await user.add_roles(guild_id.get_role(roles_config.general_category_roles['player']))
 
-# async def new_player_joined(user, guild_id):
-#     await user.add_roles(guild_id.get_role(roles_config.util_categories['general_category']))
-#     await user.add_roles(guild_id.get_role(roles_config.general_category_roles['new_player']))
+
+async def new_player_joined(user, guild_id):
+    await user.add_roles(guild_id.get_role(roles_config.util_categories['general_category']))
+    await user.add_roles(guild_id.get_role(roles_config.general_category_roles['new_player']))
 #     role = nextcord.utils.get(user.guild.roles, name='Имя роли') # САМА РОЛЬ КОТОРУЮ ВЫДАЕМ
 #     await member.add_roles(role) # ДОБАВЛЯЕМ РОЛЬ
