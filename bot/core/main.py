@@ -42,57 +42,120 @@ async def help(ctx):
 '''
 
 
-@client.command()
+@client.command(pass_context=True)
 async def registration_menu(ctx):
     class RegistrationMenu(nextcord.ui.View):
 
         @discord.ui.button(label='Подать заявку в полк', style=nextcord.ButtonStyle.green)
-        async def registration(self, button, interaction):
-            await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
-            # await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
-            # await interaction.response.send_message(content='Какой максимальный БР?', ephemeral=True)
-            self.clear_items()
-            embed = message.embeds[0]
-            # embed.color = 0x38a22a
-            # embed.title = 'Принято'
-            await message.edit(embed=embed, view=self)
-            self.stop()
+        async def join_squadron(self, button, interaction):
+
+            a = await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
+            # await message_transformation.clear_last_user_message(ctx)
+            print(a)
+            try:
+
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)
+                nickname_user = msg_id.content
+
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+            await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
+            try:
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)  # 30 seconds to reply
+
+                name_user = msg_id.content
+
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+
+            await interaction.followup.send(content='*Введите ваш максимальный БР*', ephemeral=True)
+            try:
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)
+
+
+
+                br_user = max([float(i) for i in msg_id.content.replace(',', '.').split()])
+
+
+
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+            new_nickname = (f"[{br_user}] {nickname_user} ({name_user})")
+            user = ctx.author
+            await user.edit(nick=new_nickname)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         @discord.ui.button(label='Друг полка', style=nextcord.ButtonStyle.blurple)
         async def squadron_friend(self, button, interaction):
 
-            a = await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
+            a = await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
             # await message_transformation.clear_last_user_message(ctx)
             print(a)
             try:
-                msg_id = await client.wait_for("message", timeout=30)  # 30 seconds to reply
 
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)
                 nickname_user = msg_id.content
 
             except asyncio.TimeoutError:
                 await ctx.send("Sorry, you didn't reply in time!")
 
-            await interaction.followup.send(content='Как Вас зовут?', ephemeral=True)
+            await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
             try:
-                msg_id = await client.wait_for("message", timeout=30)  # 30 seconds to reply
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)  # 30 seconds to reply
 
                 name_user = msg_id.content
 
-                # await ctx.send(msg_text)
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+            class SquadronMenu(nextcord.ui.View):
+
+                @discord.ui.button(label='Да', style=nextcord.ButtonStyle.green)
+                async def squadron_friend1(self, button, interaction):
+                    await interaction.response.send_message(content='*Введите клантег полка(например*', ephemeral=True)
+
+                @discord.ui.button(label='Нет', style=nextcord.ButtonStyle.red)
+                async def squadron_friend2(self, button, interaction):
+                    await interaction.response.send_message(content='*Регистрация завершена*', ephemeral=True)
+
+
+
+            view_squadron_buttons = SquadronMenu()
+            await interaction.followup.send(content='*Вы состоите в полку?*', ephemeral=True, view=view_squadron_buttons)
+            try:
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)
+
+
 
             except asyncio.TimeoutError:
-                await ctx.send("Sorry, you didn't reply in time!")
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
             await ctx.send(f"{nickname_user} ({name_user})")
-            # await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
-            # await interaction.response.send_message(content='Введите ваш клантег(Если есть) *например: PVVD*',
-            #                                         ephemeral=True)
-
-            # self.clear_items()
-            embed = message.embeds[0]
-            # embed.color = 0xde3b3b
-            # embed.title = 'Отказ'
-            await message.edit(embed=embed, view=self)
-            self.stop()
 
     view = RegistrationMenu()
     rank = rank_system.get_member_rank(ctx.author, str=True)
