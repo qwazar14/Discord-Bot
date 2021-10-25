@@ -7,7 +7,7 @@ from nextcord.ext import commands
 
 import modules.utils.error_controller as error_controller
 import modules.utils.message_transformation as message_transformation
-import modules.utils.ranks as RankSystem
+import modules.utils.ranks as rank_system
 from bot.core.configs import roles_config
 from bot.core.configs.access_config import settings
 from bot.core.modules.user import member_roles
@@ -41,24 +41,82 @@ async def help(ctx):
 
 
 @client.command()
+async def registration_menu(ctx):
+    class RegistrationMenu(nextcord.ui.View):
+
+        @discord.ui.button(label='Подать заявку', style=nextcord.ButtonStyle.green)
+        async def registration(self, button, interaction):
+            await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
+            await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
+            await interaction.response.send_message(content='Какой максимальный БР?', ephemeral=True)
+            self.clear_items()
+            embed = message.embeds[0]
+            # embed.color = 0x38a22a
+            # embed.title = 'Принято'
+            await message.edit(embed=embed, view=self)
+            self.stop()
+
+        @discord.ui.button(label='Друг полка', style=nextcord.ButtonStyle.blurple)
+        async def squadron_friend(self, button, interaction):
+            await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
+            await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
+            await interaction.response.send_message(content='Введите ваш клантег(Если есть) *например: PVVD',
+                                                    ephemeral=True)
+
+            self.clear_items()
+            embed = message.embeds[0]
+            # embed.color = 0xde3b3b
+            # embed.title = 'Отказ'
+            await message.edit(embed=embed, view=self)
+            self.stop()
+
+    view = RegistrationMenu()
+    rank = rank_system.get_member_rank(ctx.author, str=True)
+    print(f'RAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANK: {rank}')
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    # if rank in ['OF-8', 'OF-9', 'OF-10']:
+    #     await ctx.author.send(
+    #         'Вы заняли максимальное звание в нашем полке. Подача заявки на повышение для вас закрыта.')
+    #     return
+
+    timedelta = now - ctx.author.joined_at
+    seconds = timedelta.total_seconds()
+    days = seconds // 86400
+    month = days // 30
+    days = days - (month * 30)
+
+    datestr = f'{int(month)} месяцев и {int(days)} дней'
+    embed = discord.Embed(title="Вы попали на сервер полка GG Company",
+                          description="**Если вы хотите вступить в полк, нажмите кнопку 'Подать заявку'**",
+                          color=0xe100ff)
+    embed.set_thumbnail(url="https://i.imgur.com/mhSJtPm.png")
+    embed.add_field(name="Если вы зашли поиграть с друзьями, нажмите кнопку 'Друг полка'",
+                    value="Нажимая кнопку вы автоматически соглашаетесь с правилами в канале <#877276991412379709>",
+                    inline=False)
+
+    message = await ctx.send(embed=embed, view=view)
+
+
+@client.command()
 async def up(ctx):
     class RankSys(nextcord.ui.View):
 
         @discord.ui.button(label='Повысить', style=nextcord.ButtonStyle.green)
         async def rank_up(self, button, interaction):
-            new_rank = RankSystem.get_next_member_rank(ctx.author)
+            new_rank = rank_system.get_next_member_rank(ctx.author)
             if interaction.user == ctx.author:
                 await interaction.response.send_message(content='Вы не можете повысить самого себя!', ephemeral=True)
                 return
-            if new_rank in RankSystem.get_officers_ranks_id():
-                if not RankSystem.if_member_can_up_officers(interaction.user):
+            if new_rank in rank_system.get_officers_ranks_id():
+                if not rank_system.if_member_can_up_officers(interaction.user):
                     await interaction.response.send_message(content='Вы не можете повышать офицеров!', ephemeral=True)
                     return
-            if not RankSystem.if_rank_member1_above_member2(ctx.author, interaction.user):
+            if not rank_system.if_rank_member1_above_member2(ctx.author, interaction.user):
                 await interaction.response.send_message(
                     content='Вы не можете повышать игроков, у которых ранг выше вашего!', ephemeral=True)
                 return
-            await ctx.author.remove_roles(ctx.guild.get_role(RankSystem.get_rank_id_by_name(rank)))
+            await ctx.author.remove_roles(ctx.guild.get_role(rank_system.get_rank_id_by_name(rank)))
             await ctx.author.add_roles(ctx.guild.get_role(new_rank))
             await ctx.author.send('Ваc повысили.')
             self.clear_items()
@@ -73,10 +131,10 @@ async def up(ctx):
             if interaction.user == ctx.author:
                 await interaction.response.send_message(content='Вы не можете повысить самого себя!', ephemeral=True)
                 return
-            if not RankSystem.if_member_can_up_officers(interaction.user):
+            if not rank_system.if_member_can_up_officers(interaction.user):
                 await interaction.response.send_message(content='Вы не можете повышать офицеров!', ephemeral=True)
                 return
-            if not RankSystem.if_rank_member1_above_member2(interaction.user, ctx.author):
+            if not rank_system.if_rank_member1_above_member2(interaction.user, ctx.author):
                 await interaction.response.send_message(
                     content='Вы не можете повышать игроков, у которых ранг выше вашего!', ephemeral=True)
                 return
@@ -89,7 +147,7 @@ async def up(ctx):
             self.stop()
 
     view = RankSys()
-    rank = RankSystem.get_member_rank(ctx.author, str=True)
+    rank = rank_system.get_member_rank(ctx.author, str=True)
     print(f'RAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANK: {rank}')
     now = datetime.datetime.now(datetime.timezone.utc)
 
