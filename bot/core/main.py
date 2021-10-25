@@ -1,7 +1,8 @@
 import datetime
 import nextcord
 import nextcord as discord
-
+import os
+from nextcord.components import Button
 
 from nextcord.ext import commands
 
@@ -11,87 +12,10 @@ import modules.user.parse_stats as parse_stats
 import modules.user.units_roles as units_roles
 import modules.utils.error_controller as error_controller
 import modules.utils.message_transformation as message_transformation
-import modules.utils.ranks as RankSystem
 from configs import roles_config
 from configs.access_config import settings
 
 client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
-
-
-
-    
-
-@client.command()
-async def up(ctx):
-
-    class RankSys(nextcord.ui.View):
-
-        @discord.ui.button(label = 'Повысить', style = nextcord.ButtonStyle.green)
-        async def rank_up(self, button, interaction):
-            new_rank = RankSystem.get_next_member_rank(ctx.author)
-            if interaction.user == ctx.author:
-                await interaction.response.send_message(content='Вы не можете повысить самого себя!',ephemeral=True)   
-                return
-            if new_rank in RankSystem.get_officers_ranks_id():
-                if not RankSystem.if_member_can_up_officers(interaction.user):
-                    await interaction.response.send_message(content='Вы не можете повышать офицеров!',ephemeral=True)   
-                    return
-            if not RankSystem.if_rank_member1_above_member2(ctx.author, interaction.user):
-                await interaction.response.send_message(content='Вы не можете повышать игроков, у которых ранг выше вашего!',ephemeral=True)   
-                return
-            await ctx.author.remove_roles(ctx.guild.get_role(RankSystem.get_rank_id_by_name(rank)))
-            await ctx.author.add_roles(ctx.guild.get_role(new_rank))
-            await ctx.author.send('Ваc повысили.')
-            self.clear_items()
-            embed = message.embeds[0]
-            embed.color = 0x38a22a
-            embed.title = 'Принято'
-            await message.edit(embed=embed,view=self)
-            self.stop()
-
-        @discord.ui.button(label = 'Отказ', style = nextcord.ButtonStyle.red)
-        async def deny(self, button, interaction):
-            if interaction.user == ctx.author:
-                await interaction.response.send_message(content='Вы не можете повысить самого себя!',ephemeral=True)   
-                return
-            if not RankSystem.if_member_can_up_officers(interaction.user):
-                await interaction.response.send_message(content='Вы не можете повышать офицеров!',ephemeral=True)   
-                return
-            if not RankSystem.if_rank_member1_above_member2(interaction.user, ctx.author):
-                await interaction.response.send_message(content='Вы не можете повышать игроков, у которых ранг выше вашего!',ephemeral=True)   
-                return
-            await ctx.author.send('Вам отказали в повышение. Следующий запрос возможен через неделю.')
-            self.clear_items()
-            embed = message.embeds[0]
-            embed.color = 0xde3b3b
-            embed.title = 'Отказ'
-            await message.edit(embed=embed,view=self)
-            self.stop()
-
-        
-
-
-    view = RankSys()
-    rank = RankSystem.get_member_rank(ctx.author, str=True)
-    print(f'RAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANK: {rank}')
-    now = datetime.datetime.now(datetime.timezone.utc)
-
-    if rank in ['OF-8','OF-9','OF-10']:
-        await ctx.author.send('Вы заняли максимальное звание в нашем полке. Подача заявки на повышение для вас закрыта.')
-        return
-    
-    timedelta = now - ctx.author.joined_at
-    seconds = timedelta.total_seconds()
-    days = seconds // 86400
-    month = days // 30
-    days = days - (month * 30)
-
-    datestr = f'{int(month)} месяцев и {int(days)} дней'
-
-    embed=discord.Embed(title="Запрос на повышение", color=0xf2930d)
-    embed.add_field(name=f"Игрок {ctx.author.nick} запрашивает повышение.", value=f"Текущее звание: {rank}", inline=True)
-    embed.set_footer(text=f"На сервере {datestr}")
-    message = await ctx.send(embed=embed, view=view)
 
 
     
