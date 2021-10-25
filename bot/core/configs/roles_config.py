@@ -45,6 +45,6 @@ optional_category_roles = {
     900870625084735489: 'universal'
 }
 general_category_roles = {
-    871761260155388064: 'player',
-    902122308527878144: 'new_player'
+    'player': 871761260155388064,
+    'new_player': 902122308527878144
 }

@@ -2,7 +2,7 @@ from nextcord.ext import commands
 from nextcord.ext.commands.cog import Cog
 
 from bot.core.configs.access_config import settings
-from bot.core.modules.user import user_roles
+from bot.core.modules.user import member_roles
 
 
 class RolesManager(Cog):
@@ -13,7 +13,7 @@ class RolesManager(Cog):
     @commands.command()
     async def categories(self, ctx):
         guild_id = self.client.get_guild(settings['guildId'])
-        await user_roles.add_util_categories(ctx, ctx.author, guild_id)
+        await member_roles.add_util_categories(ctx, ctx.author, guild_id)
 
 
 def setup(bot):

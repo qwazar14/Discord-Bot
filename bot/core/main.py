@@ -10,9 +10,10 @@ import modules.utils.message_transformation as message_transformation
 import modules.utils.ranks as RankSystem
 from bot.core.configs import roles_config
 from bot.core.configs.access_config import settings
-from bot.core.modules.user import user_roles
+from bot.core.modules.user import member_roles
 
-client = commands.Bot(command_prefix=settings['botPrefix'])
+intents = discord.Intents.all()
+client = commands.Bot(command_prefix=settings['botPrefix'], intents=intents)
 
 
 @client.event
@@ -23,10 +24,8 @@ async def on_ready():
 @client.event
 async def on_member_join(member):
     guild_id = client.get_guild(settings['guildId'])
-    await user_roles.new_player_joined(member, guild_id)
-
-    # role = member.guild.get_role(role_id=id_роли)
-    # await member.add_roles(role)
+    await member_roles.new_player_joined(member, guild_id)
+    print(f"[INFO] {member} was given the main roles.")
 
 
 @client.event
