@@ -2,7 +2,7 @@ from bot.core.configs import roles_config
 
 
 def get_all_ranks_dict():
-    return roles_config.officer_roles | roles_config.soldier_roles
+    return roles_config.soldier_roles | roles_config.officer_roles  
 
 
 def get_officers_ranks_dict():
@@ -102,7 +102,7 @@ def if_rank_member1_above_member2(member1, member2):
     member1_rank_numb = get_global_rank_number(member1_rank)
     member2_rank_numb = get_global_rank_number(member2_rank)
 
-    if member1_rank_numb > member2_rank_numb:
+    if member1_rank_numb < member2_rank_numb:
         return True
     else:
         return False
