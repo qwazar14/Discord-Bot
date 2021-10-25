@@ -1,5 +1,7 @@
+import asyncio
 import datetime
 import os
+import re
 
 import nextcord
 import nextcord as discord
@@ -47,8 +49,8 @@ async def registration_menu(ctx):
         @discord.ui.button(label='Подать заявку', style=nextcord.ButtonStyle.green)
         async def registration(self, button, interaction):
             await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
-            await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
-            await interaction.response.send_message(content='Какой максимальный БР?', ephemeral=True)
+            # await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
+            # await interaction.response.send_message(content='Какой максимальный БР?', ephemeral=True)
             self.clear_items()
             embed = message.embeds[0]
             # embed.color = 0x38a22a
@@ -59,9 +61,27 @@ async def registration_menu(ctx):
         @discord.ui.button(label='Друг полка', style=nextcord.ButtonStyle.blurple)
         async def squadron_friend(self, button, interaction):
             await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
-            await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
-            await interaction.response.send_message(content='Введите ваш клантег(Если есть) *например: PVVD',
-                                                    ephemeral=True)
+            try:
+                msg_id_group = await client.wait_for("message", timeout=30)  # 30 seconds to reply
+
+                # print(f"msgid_group\n{msg_id_group}")
+                msg_id = int(re.search(r"[0-9]+", str(msg_id_group)).group(0).strip())
+
+                async def get_message_text(msg_id1):
+                    return await ctx.fetch_message(int(msg_id1))
+
+                # print(f"msgid\n{msg_id}")
+
+                msg_text = await get_message_text(msg_id)
+                await ctx.send(msg_id)
+
+
+            except asyncio.TimeoutError:
+                await ctx.send("Sorry, you didn't reply in time!")
+
+            # await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
+            # await interaction.response.send_message(content='Введите ваш клантег(Если есть) *например: PVVD*',
+            #                                         ephemeral=True)
 
             self.clear_items()
             embed = message.embeds[0]
