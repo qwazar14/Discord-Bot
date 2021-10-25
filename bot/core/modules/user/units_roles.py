@@ -1,9 +1,9 @@
 from nextcord.ext import commands
 
 # from configs import roles_config
-import configs.roles_config as roles_config
-from configs.access_config import settings
-from modules.utils.message_transformation import clear_last_user_message
+import bot.core.configs.roles_config as roles_config
+from bot.core.configs.access_config import settings
+from bot.core.modules.utils.message_transformation import clear_last_user_message
 
 client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
 

@@ -1,31 +1,44 @@
+import asyncio
 import datetime
+import os
+import re
+
 import nextcord
 import nextcord as discord
-import os
-from nextcord.components import Button
 
+from nextcord.components import Button
 from nextcord.ext import commands
 
-import modules.user.card_generator as card_generator
-import modules.user.help_message as help_message
-import modules.user.parse_stats as parse_stats
-import modules.user.units_roles as units_roles
 import modules.utils.error_controller as error_controller
 import modules.utils.message_transformation as message_transformation
 from configs import roles_config
 from configs.access_config import settings
 
-client = commands.Bot(command_prefix=settings['botPrefix'], help_command=None)
+import modules.utils.ranks as rank_system
+from bot.core.configs import roles_config
+from bot.core.configs.access_config import settings
+from bot.core.modules.user import member_roles
+
+intents = discord.Intents.all()
+client = commands.Bot(command_prefix=settings['botPrefix'], intents=intents)
 
 
-    
 @client.event
 async def on_ready():
-    print('[LOG] Bot is ready!')
+    print('[INFO] Bot is ready!')
+
+
+@client.event
+async def on_member_join(member):
+    guild_id = client.get_guild(settings['guildId'])
+    await member_roles.new_player_joined(member, guild_id)
+    print(f"[INFO] {member} was given the main roles.")
+
 
 @client.event
 async def on_command(ctx):
-    print(f'[LOG] {ctx.author} called command {ctx.command}:\nArgs: {ctx.args}\nKwargs: {ctx.kwargs}')
+    print(f'[INFO] {ctx.author} called command {ctx.command}:\nArgs: {ctx.args}\nKwargs: {ctx.kwargs}')
+
 
 '''@client.command()
 async def help(ctx):
@@ -33,13 +46,128 @@ async def help(ctx):
     await help_message.send_help_message(ctx)
 '''
 
+
+@client.command(pass_context=True)
+async def registration_menu(ctx):
+    class RegistrationMenu(nextcord.ui.View):
+
+        @discord.ui.button(label='Подать заявку в полк', style=nextcord.ButtonStyle.green)
+        async def join_squadron(self, button, interaction):
+            user = interaction.user
+            # a = await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
+            # await message_transformation.clear_last_user_message(ctx)
+            # print(a)
+            await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
+            try:
+
+                msg_id = await client.wait_for("message", timeout=5, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)
+                nickname_user = msg_id.content
+
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+            await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
+            try:
+                msg_id = await client.wait_for("message", timeout=5, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)  # 30 seconds to reply
+
+                name_user = msg_id.content
+
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+            await interaction.followup.send(content='*Введите ваш максимальный БР*', ephemeral=True)
+            try:
+                msg_id = await client.wait_for("message", timeout=5, check=lambda
+                        m: m.author == interaction.user and m.channel == interaction.channel)
+
+                br_user = max([float(i) for i in msg_id.content.replace(',', '.').split()])
+                new_nickname = (f"[{br_user}] {nickname_user} ({name_user})")
+                await user.edit(nick=new_nickname)
+
+
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+
+
+
+
+
+        @discord.ui.button(label='Друг полка', style=nextcord.ButtonStyle.blurple)
+        async def squadron_friend(self, button, interaction):
+
+            a = await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
+            # await message_transformation.clear_last_user_message(ctx)
+            print(a)
+            try:
+
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)
+                nickname_user = msg_id.content
+
+            except asyncio.TimeoutError:
+                await ctx.send("Sorry, you didn't reply in time!")
+
+            await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
+            try:
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)  # 30 seconds to reply
+
+                name_user = msg_id.content
+
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+            class SquadronMenu(nextcord.ui.View):
+
+                @discord.ui.button(label='Да', style=nextcord.ButtonStyle.green)
+                async def squadron_friend1(self, button, interaction):
+                    await interaction.response.send_message(content='*Введите клантег полка(например*', ephemeral=True)
+
+                @discord.ui.button(label='Нет', style=nextcord.ButtonStyle.red)
+                async def squadron_friend2(self, button, interaction):
+                    await interaction.response.send_message(content='*Регистрация завершена*', ephemeral=True)
+
+            view_squadron_buttons = SquadronMenu()
+            await interaction.followup.send(content='*Вы состоите в полку?*', ephemeral=True,
+                                            view=view_squadron_buttons)
+            try:
+                msg_id = await client.wait_for("message", timeout=30, check=lambda
+                    m: m.author == interaction.user and m.channel == interaction.channel)
+                await ctx.send(f"{nickname_user} ({name_user})")
+
+
+            except asyncio.TimeoutError:
+                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+
+
+    view = RegistrationMenu()
+    rank = rank_system.get_member_rank(ctx.author, str=True)
+
+    embed = discord.Embed(title="Вы попали на сервер полка GG Company",
+                          description="**Если вы хотите вступить в полк, нажмите кнопку 'Подать заявку'**",
+                          color=0xe100ff)
+    embed.set_thumbnail(url="https://i.imgur.com/mhSJtPm.png")
+    embed.add_field(name="Если вы зашли поиграть с друзьями, нажмите кнопку 'Друг полка'",
+                    value="Нажимая кнопку вы автоматически соглашаетесь с правилами в канале <#877276991412379709>",
+                    inline=False)
+
+    message = await ctx.send(embed=embed, view=view)
+
+
+
+
 @client.command()
 async def rules(ctx):
     await message_transformation.send_rules_to_the_channel(ctx)
 
+
 @client.command()
 async def t(ctx):
     await error_controller.user_has_no_roles(ctx)
+
 
 @commands.has_any_role(roles_config.discord_roles['admin'])
 @client.command()
@@ -66,6 +194,7 @@ async def reload(ctx, extension):
     if result != "":
         await ctx.send(result)
 
+
 @commands.has_any_role(roles_config.discord_roles['admin'])
 @client.command()
 async def unload(ctx, extension):
@@ -89,6 +218,7 @@ async def unload(ctx, extension):
     if result != "":
         await ctx.send(result)
 
+
 @commands.has_any_role(roles_config.discord_roles['admin'])
 @client.command()
 async def load(ctx, extension):
@@ -111,7 +241,8 @@ async def load(ctx, extension):
             await ctx.send(f"**{extension}** loaded!")
     if result != "":
         await ctx.send(result)
-        
+
+
 # @commands.has_any_role(roles_config.discord_roles['admin'])
 # @client.command()
 # async def rules(ctx):
