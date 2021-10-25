@@ -1,7 +1,7 @@
 import nextcord as discord
-
 from nextcord.ext import commands
 from nextcord.ext.commands.cog import Cog
+
 from bot.core.configs.access_config import settings
 from bot.core.modules.user import units_roles, parse_stats, card_generator
 
@@ -23,7 +23,7 @@ class Card(Cog):
 
     @commands.command()
     async def rb(self, ctx, nickname: discord.Member = None):
-        await self.parse_stats.get_statistics(ctx, nickname, 'r')
+        await parse_stats.get_statistics(ctx, nickname, 'r')
 
     @commands.command()
     async def sb(self, ctx, nickname: discord.Member = None):

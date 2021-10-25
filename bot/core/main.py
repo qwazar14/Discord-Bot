@@ -3,20 +3,42 @@ import os
 
 import nextcord
 import nextcord as discord
-
 from nextcord.ext import commands
 
-import modules.user.card_generator as card_generator
-import modules.user.help_message as help_message
-import modules.user.parse_stats as parse_stats
-import modules.user.units_roles as units_roles
 import modules.utils.error_controller as error_controller
 import modules.utils.message_transformation as message_transformation
 import modules.utils.ranks as RankSystem
 from bot.core.configs import roles_config
 from bot.core.configs.access_config import settings
+from bot.core.modules.user import user_roles
 
 client = commands.Bot(command_prefix=settings['botPrefix'])
+
+
+@client.event
+async def on_ready():
+    print('[LOG] Bot is ready!')
+
+
+@client.event
+async def on_member_join(member):
+    guild_id = client.get_guild(settings['guildId'])
+    await user_roles.new_player_joined(member, guild_id)
+
+    # role = member.guild.get_role(role_id=id_роли)
+    # await member.add_roles(role)
+
+
+@client.event
+async def on_command(ctx):
+    print(f'[LOG] {ctx.author} called command {ctx.command}:\nArgs: {ctx.args}\nKwargs: {ctx.kwargs}')
+
+
+'''@client.command()
+async def help(ctx):
+    # user = ctx.author
+    await help_message.send_help_message(ctx)
+'''
 
 
 @client.command()
@@ -90,23 +112,6 @@ async def up(ctx):
                     inline=True)
     embed.set_footer(text=f"На сервере {datestr}")
     message = await ctx.send(embed=embed, view=view)
-
-
-@client.event
-async def on_ready():
-    print('[LOG] Bot is ready!')
-
-
-@client.event
-async def on_command(ctx):
-    print(f'[LOG] {ctx.author} called command {ctx.command}:\nArgs: {ctx.args}\nKwargs: {ctx.kwargs}')
-
-
-'''@client.command()
-async def help(ctx):
-    # user = ctx.author
-    await help_message.send_help_message(ctx)
-'''
 
 
 @client.command()

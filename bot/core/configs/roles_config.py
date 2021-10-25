@@ -1,14 +1,12 @@
 discord_roles = {
-    'admin': 668415545049088000,
-    'user': 822206371369451601
+    'admin': 668415545049088000
 }
 
-unit_roles = {
-    'tanks': 899728823547998268,
-    'planes': 899728848025964585,
-    'ships': 899728870859743302,
-    'helicopters': 900117937355112469
-
+util_categories = {
+    'rank_category': 900832298168123403,
+    'unit_type_category': 900871731500183553,
+    'optional_category': 900835519968206899,
+    'general_category': 900835024688001084
 }
 
 officer_roles = {
@@ -34,4 +32,19 @@ soldier_roles = {
     900832386571440188: 'OR-7',
     900832411162669077: 'OR-8',
     900832439428071424: 'OR-9'
+}
+
+unit_roles = {
+    899728823547998268: 'tanks',
+    899728848025964585: 'planes',
+    900870446097002506: 'zsu'
+}
+
+optional_category_roles = {
+    900899011815407636: 'veteran',
+    900870625084735489: 'universal'
+}
+general_category_roles = {
+    871761260155388064: 'player',
+    902122308527878144: 'new_player'
 }
