@@ -46,7 +46,7 @@ async def help(ctx):
 async def registration_menu(ctx):
     class RegistrationMenu(nextcord.ui.View):
 
-        @discord.ui.button(label='Подать заявку', style=nextcord.ButtonStyle.green)
+        @discord.ui.button(label='Подать заявку в полк', style=nextcord.ButtonStyle.green)
         async def registration(self, button, interaction):
             await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
             # await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
@@ -60,30 +60,34 @@ async def registration_menu(ctx):
 
         @discord.ui.button(label='Друг полка', style=nextcord.ButtonStyle.blurple)
         async def squadron_friend(self, button, interaction):
-            await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
+
+            a = await interaction.response.send_message(content='Введите ник в игре', ephemeral=True)
+            # await message_transformation.clear_last_user_message(ctx)
+            print(a)
             try:
-                msg_id_group = await client.wait_for("message", timeout=30)  # 30 seconds to reply
+                msg_id = await client.wait_for("message", timeout=30)  # 30 seconds to reply
 
-                # print(f"msgid_group\n{msg_id_group}")
-                msg_id = int(re.search(r"[0-9]+", str(msg_id_group)).group(0).strip())
-
-                async def get_message_text(msg_id1):
-                    return await ctx.fetch_message(int(msg_id1))
-
-                # print(f"msgid\n{msg_id}")
-
-                msg_text = await get_message_text(msg_id)
-                await ctx.send(msg_id)
-
+                nickname_user = msg_id.content
 
             except asyncio.TimeoutError:
                 await ctx.send("Sorry, you didn't reply in time!")
 
+            await interaction.followup.send(content='Как Вас зовут?', ephemeral=True)
+            try:
+                msg_id = await client.wait_for("message", timeout=30)  # 30 seconds to reply
+
+                name_user = msg_id.content
+
+                # await ctx.send(msg_text)
+
+            except asyncio.TimeoutError:
+                await ctx.send("Sorry, you didn't reply in time!")
+            await ctx.send(f"{nickname_user} ({name_user})")
             # await interaction.response.send_message(content='Как Вас зовут?', ephemeral=True)
             # await interaction.response.send_message(content='Введите ваш клантег(Если есть) *например: PVVD*',
             #                                         ephemeral=True)
 
-            self.clear_items()
+            # self.clear_items()
             embed = message.embeds[0]
             # embed.color = 0xde3b3b
             # embed.title = 'Отказ'
@@ -92,21 +96,7 @@ async def registration_menu(ctx):
 
     view = RegistrationMenu()
     rank = rank_system.get_member_rank(ctx.author, str=True)
-    print(f'RAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANK: {rank}')
-    now = datetime.datetime.now(datetime.timezone.utc)
 
-    # if rank in ['OF-8', 'OF-9', 'OF-10']:
-    #     await ctx.author.send(
-    #         'Вы заняли максимальное звание в нашем полке. Подача заявки на повышение для вас закрыта.')
-    #     return
-
-    timedelta = now - ctx.author.joined_at
-    seconds = timedelta.total_seconds()
-    days = seconds // 86400
-    month = days // 30
-    days = days - (month * 30)
-
-    datestr = f'{int(month)} месяцев и {int(days)} дней'
     embed = discord.Embed(title="Вы попали на сервер полка GG Company",
                           description="**Если вы хотите вступить в полк, нажмите кнопку 'Подать заявку'**",
                           color=0xe100ff)
