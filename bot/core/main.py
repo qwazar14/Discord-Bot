@@ -1,23 +1,18 @@
 import asyncio
-import datetime
 import os
-import re
 
 import nextcord
 import nextcord as discord
-
-from nextcord.components import Button
 from nextcord.ext import commands
 
 import modules.utils.error_controller as error_controller
 import modules.utils.message_transformation as message_transformation
-from configs import roles_config
-from configs.access_config import settings
-
 import modules.utils.ranks as rank_system
 from bot.core.configs import roles_config
 from bot.core.configs.access_config import settings
 from bot.core.modules.user import member_roles
+from bot.core.modules.utils.registration_menu.registration_functions import timeout_error, get_user_response, \
+    replace_comma_to_do
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix=settings['botPrefix'], intents=intents)
@@ -52,48 +47,34 @@ async def registration_menu(ctx):
     class RegistrationMenu(nextcord.ui.View):
 
         @discord.ui.button(label='Подать заявку в полк', style=nextcord.ButtonStyle.green)
-        async def join_squadron(self, button, interaction):
+        async def join_squadron(self, button, interaction, error_check=True):
             user = interaction.user
-            # a = await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
-            # await message_transformation.clear_last_user_message(ctx)
-            # print(a)
+
             await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
             try:
-
-                msg_id = await client.wait_for("message", timeout=5, check=lambda
-                    m: m.author == interaction.user and m.channel == interaction.channel)
-                nickname_user = msg_id.content
+                nickname_user = await get_user_response(client, interaction)
 
             except asyncio.TimeoutError:
-                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+                error_check = await timeout_error(interaction)
 
-            await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
-            try:
-                msg_id = await client.wait_for("message", timeout=5, check=lambda
-                    m: m.author == interaction.user and m.channel == interaction.channel)  # 30 seconds to reply
+            if error_check is not False:
+                await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
+                try:
+                    name_user = await get_user_response(client, interaction)
 
-                name_user = msg_id.content
+                except asyncio.TimeoutError:
+                    error_check = await timeout_error(interaction)
 
-            except asyncio.TimeoutError:
-                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+            if error_check is not False:
+                await interaction.followup.send(content='*Введите ваш максимальный БР*', ephemeral=True)
+                try:
+                    br_msg_content = await get_user_response(client, interaction)
+                    br_user = await replace_comma_to_do(br_msg_content)
+                    new_nickname = (f"[{br_user}] {nickname_user} ({name_user})")
+                    await user.edit(nick=new_nickname)
 
-            await interaction.followup.send(content='*Введите ваш максимальный БР*', ephemeral=True)
-            try:
-                msg_id = await client.wait_for("message", timeout=5, check=lambda
-                        m: m.author == interaction.user and m.channel == interaction.channel)
-
-                br_user = max([float(i) for i in msg_id.content.replace(',', '.').split()])
-                new_nickname = (f"[{br_user}] {nickname_user} ({name_user})")
-                await user.edit(nick=new_nickname)
-
-
-            except asyncio.TimeoutError:
-                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
-
-
-
-
-
+                except asyncio.TimeoutError:
+                    await timeout_error(interaction)
 
         @discord.ui.button(label='Друг полка', style=nextcord.ButtonStyle.blurple)
         async def squadron_friend(self, button, interaction):
@@ -108,7 +89,7 @@ async def registration_menu(ctx):
                 nickname_user = msg_id.content
 
             except asyncio.TimeoutError:
-                await ctx.send("Sorry, you didn't reply in time!")
+                await timeout_error(interaction)
 
             await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
             try:
@@ -118,7 +99,7 @@ async def registration_menu(ctx):
                 name_user = msg_id.content
 
             except asyncio.TimeoutError:
-                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
+                await timeout_error(interaction)
 
             class SquadronMenu(nextcord.ui.View):
 
@@ -133,15 +114,14 @@ async def registration_menu(ctx):
             view_squadron_buttons = SquadronMenu()
             await interaction.followup.send(content='*Вы состоите в полку?*', ephemeral=True,
                                             view=view_squadron_buttons)
+
             try:
                 msg_id = await client.wait_for("message", timeout=30, check=lambda
                     m: m.author == interaction.user and m.channel == interaction.channel)
                 await ctx.send(f"{nickname_user} ({name_user})")
 
-
             except asyncio.TimeoutError:
-                await ctx.send("Извините, вы не ответили вовремя! Повторите попытку")
-
+                await timeout_error(interaction)
 
     view = RegistrationMenu()
     rank = rank_system.get_member_rank(ctx.author, str=True)
@@ -155,8 +135,6 @@ async def registration_menu(ctx):
                     inline=False)
 
     message = await ctx.send(embed=embed, view=view)
-
-
 
 
 @client.command()
