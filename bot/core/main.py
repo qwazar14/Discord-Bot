@@ -8,11 +8,12 @@ from nextcord.ext import commands
 import modules.utils.error_controller as error_controller
 import modules.utils.message_transformation as message_transformation
 import modules.utils.ranks as rank_system
-from bot.core.configs import roles_config
+from bot.core.configs import roles_config, util_config
 from bot.core.configs.access_config import settings
 from bot.core.modules.user import member_roles
-from bot.core.modules.utils.registration_menu.registration_functions import timeout_error, get_user_response, \
-    replace_comma_to_do
+# from bot.core.modules.utils.registration_menu.registration_functions import timeout_error, get_user_response, \
+#     replace_comma_to_do, SquadronMenu, user_without_squadron
+import bot.core.modules.utils.registration_menu.registration_functions as registration_functions
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix=settings['botPrefix'], intents=intents)
@@ -47,81 +48,89 @@ async def registration_menu(ctx):
     class RegistrationMenu(nextcord.ui.View):
 
         @discord.ui.button(label='Подать заявку в полк', style=nextcord.ButtonStyle.green)
-        async def join_squadron(self, button, interaction, error_check=True):
+        async def join_squadron(self, button, interaction, timeout_error_call=True):
             user = interaction.user
 
             await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
             try:
-                nickname_user = await get_user_response(client, interaction)
+                nickname_user = await registration_functions.get_user_response(client, interaction)
+
+                # await message_transformation.clear_last_user_message(self)
 
             except asyncio.TimeoutError:
-                error_check = await timeout_error(interaction)
+                timeout_error_call = await registration_functions.timeout_error(interaction)
 
-            if error_check is not False:
+            if timeout_error_call is not False:
                 await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
                 try:
-                    name_user = await get_user_response(client, interaction)
+                    name_user = await registration_functions.get_user_response(client, interaction)
+                    # await message_transformation.clear_last_user_message(ctx)
 
                 except asyncio.TimeoutError:
-                    error_check = await timeout_error(interaction)
+                    timeout_error_call = await registration_functions.timeout_error(interaction)
 
-            if error_check is not False:
+            if timeout_error_call is not False:
                 await interaction.followup.send(content='*Введите ваш максимальный БР*', ephemeral=True)
                 try:
-                    br_msg_content = await get_user_response(client, interaction)
-                    br_user = await replace_comma_to_do(br_msg_content)
-                    new_nickname = (f"[{br_user}] {nickname_user} ({name_user})")
+                    br_msg_content = await registration_functions.get_user_response(client, interaction)
+                    br_user = await registration_functions.replace_comma_to_do(br_msg_content)
+                    new_nickname = f"[{br_user}] {nickname_user} ({name_user})"
                     await user.edit(nick=new_nickname)
+                    await registration_functions.end_registration(self, interaction)
 
                 except asyncio.TimeoutError:
-                    await timeout_error(interaction)
+                    await registration_functions.timeout_error(interaction)
 
         @discord.ui.button(label='Друг полка', style=nextcord.ButtonStyle.blurple)
-        async def squadron_friend(self, button, interaction):
+        async def squadron_friend(self, button, interaction, timeout_error_call=True):
 
-            a = await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
-            # await message_transformation.clear_last_user_message(ctx)
-            print(a)
+            user = interaction.user
+
+            await interaction.response.send_message(content='*Введите ник в игре* ', ephemeral=True)
             try:
-
-                msg_id = await client.wait_for("message", timeout=30, check=lambda
-                    m: m.author == interaction.user and m.channel == interaction.channel)
-                nickname_user = msg_id.content
+                nickname_user = await registration_functions.get_user_response(client, interaction)
 
             except asyncio.TimeoutError:
-                await timeout_error(interaction)
+                timeout_error_call = await registration_functions.timeout_error(interaction)
 
-            await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
-            try:
-                msg_id = await client.wait_for("message", timeout=30, check=lambda
-                    m: m.author == interaction.user and m.channel == interaction.channel)  # 30 seconds to reply
+            if timeout_error_call is not False:
+                await interaction.followup.send(content='*Как Вас зовут?*', ephemeral=True)
+                try:
+                    name_user = await registration_functions.get_user_response(client, interaction)
 
-                name_user = msg_id.content
+                except asyncio.TimeoutError:
+                    timeout_error_call = await registration_functions.timeout_error(interaction)
 
-            except asyncio.TimeoutError:
-                await timeout_error(interaction)
+                # if timeout_error_call is not False:
 
-            class SquadronMenu(nextcord.ui.View):
+                class SquadronMenu(nextcord.ui.View):
 
-                @discord.ui.button(label='Да', style=nextcord.ButtonStyle.green)
-                async def squadron_friend1(self, button, interaction):
-                    await interaction.response.send_message(content='*Введите клантег полка(например*', ephemeral=True)
+                    @discord.ui.button(label='Да', style=nextcord.ButtonStyle.green)
+                    async def get_user_squadron(self, interaction):
+                        await interaction.response.send_message(content='*Введите клантег полка(например*',
+                                                                ephemeral=True)
+                        try:
+                            squadron_user = await registration_functions.get_user_response(client, interaction)
+                            new_nickname = f"[{squadron_user}] {nickname_user} ({name_user})"
+                            await ctx.send()
+                            await user.edit(nick=new_nickname)
+                        except asyncio.TimeoutError:
+                            await registration_functions.timeout_error(interaction)
 
-                @discord.ui.button(label='Нет', style=nextcord.ButtonStyle.red)
-                async def squadron_friend2(self, button, interaction):
-                    await interaction.response.send_message(content='*Регистрация завершена*', ephemeral=True)
+                    @discord.ui.button(label='Нет', style=nextcord.ButtonStyle.red)
+                    async def end_user_registration(self, interaction):
+                        new_nickname = f"[-] {nickname_user} ({name_user})"
+                        await ctx.send(new_nickname)
+                        await user.edit(nick=new_nickname)
+                        await registration_functions.end_registration(self, interaction)
+                if timeout_error_call is not False:
+                    view_squadron_buttons = SquadronMenu()
+                    await interaction.followup.send(content='*Вы состоите в полку?*', ephemeral=True,
+                                        view=view_squadron_buttons)
+                else: pass
 
-            view_squadron_buttons = SquadronMenu()
-            await interaction.followup.send(content='*Вы состоите в полку?*', ephemeral=True,
-                                            view=view_squadron_buttons)
 
-            try:
-                msg_id = await client.wait_for("message", timeout=30, check=lambda
-                    m: m.author == interaction.user and m.channel == interaction.channel)
-                await ctx.send(f"{nickname_user} ({name_user})")
-
-            except asyncio.TimeoutError:
-                await timeout_error(interaction)
+                # await registration_functions.get_user_response(client, interaction)
 
     view = RegistrationMenu()
     rank = rank_system.get_member_rank(ctx.author, str=True)
