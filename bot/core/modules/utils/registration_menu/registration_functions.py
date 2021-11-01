@@ -10,7 +10,10 @@ async def timeout_error(interaction):
 async def get_user_response(client, interaction):
     msg = await client.wait_for("message", timeout=registration_menu['timeout'], check=lambda
         m: m.author == interaction.user and m.channel == interaction.channel)
-    return msg.content
+    temp = msg
+    await msg.delete()
+    return temp.content
+
 
 
 async def replace_comma_to_do(br_msg_content):

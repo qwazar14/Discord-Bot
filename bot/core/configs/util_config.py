@@ -1,3 +1,3 @@
 registration_menu = {
-    'timeout': 3
+    'timeout': 30
 }
