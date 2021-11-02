@@ -77,8 +77,9 @@ class RankManager(commands.Cog):
 
     @commands.command()
     async def up(self, ctx):
+        
         class View(nextcord.ui.View):
-
+        
             @discord.ui.button(label = 'Повысить', style = nextcord.ButtonStyle.green)
             async def rank_up(self, button, interaction):
                 new_rank = RankSystem.get_next_member_rank(ctx.author)

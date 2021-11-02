@@ -1,4 +1,5 @@
 import asyncio
+import math
 import re
 from dataclasses import dataclass
 
@@ -6,6 +7,9 @@ import nextcord as discord
 from nextcord.ext.commands.context import P
 import lavalink
 from nextcord.ext import commands
+from nextcord.types.components import ButtonStyle
+from nextcord.ui import view
+from nextcord.webhook import async_
 
 url_rx = re.compile(r'https?://(?:www\.)?.+')
 
@@ -79,6 +83,21 @@ class LavalinkVoiceClient(discord.VoiceClient):
         player.channel_id = None
         self.cleanup()
 
+class MusicTime:
+    
+    def __init__(self, millis) -> None:
+        seconds=(millis/1000)%60
+        self.seconds = int(seconds)
+        minutes=(millis/(1000*60))%60
+        self.minutes = int(minutes)
+        hours=(millis/(1000*60*60))%24
+        self.hours = int(hours)
+
+    def __str__(self) -> str:
+        if self.hours > 0:
+            return f'{self.hours:0>2.0f}:{self.minutes:0>2.0f}:{self.seconds:0>2.0f}'
+        else:
+            return f'{self.minutes:0>2.0f}:{self.seconds:0>2.0f}'
 
 # MUSIC CLASS
 
@@ -261,23 +280,6 @@ class Music(commands.Cog):
 
         await player.set_pause(False) 
 
-    class MusicTime:
-        
-        def __init__(self, millis) -> None:
-            seconds=(millis/1000)%60
-            self.seconds = int(seconds)
-            minutes=(millis/(1000*60))%60
-            self.minutes = int(minutes)
-            hours=(millis/(1000*60*60))%24
-            self.hours = int(hours)
-
-        def __str__(self) -> str:
-            if self.hours > 0:
-                return f'{self.hours:0>2.0f}:{self.minutes:0>2.0f}:{self.seconds:0>2.0f}'
-            else:
-                return f'{self.minutes:0>2.0f}:{self.seconds:0>2.0f}'
-
-
         
     @commands.command()
     async def queue(self, ctx):
@@ -338,6 +340,124 @@ class Music(commands.Cog):
         await ctx.voice_client.disconnect(force=True)
         await ctx.send('*⃣ | Disconnected.')
 
+
+    @commands.command()
+    async def mmenu(self, ctx):
+
+        class Menu(discord.ui.View):
+
+            def __init__(self, bot, ctx, *, timeout=None):
+                super().__init__(timeout=timeout)
+                self.bot = bot
+                self.ctx = ctx
+                self.controller = Music(self.bot)
+                self.queue_pos = 0
+                self.message = None
+
+            async def send_embed(self):
+                player = self.controller.bot.lavalink.player_manager.get(self.ctx.guild.id)
+                current = player.current
+                queue_text = ''
+                requester = self.ctx.guild.get_member(current.requester)
+                current_time = MusicTime(current.duration)
+                current_pos = MusicTime(player.position)
+
+                self.embed=discord.Embed(title="Меню музыки", color=0xE100FF, description=f"Сейчас: [{current.title}]({current.uri}) ({current_pos}/{current_time}) — {requester.mention}")
+                if player.queue:
+                    queue = player.queue[0+(5*self.queue_pos):5*(self.queue_pos+1)]
+                    for i,track in enumerate(queue):
+                        duration = MusicTime(track.duration)
+                        requester = self.ctx.guild.get_member(track.requester)
+                        queue_text += f'**{i+1} > ** [{track.title}]({track.uri}) ({duration}) — {requester.mention}\n'
+                else:
+                    queue_text = '**Очередь пустая**'
+                self.embed.add_field(name='Очередь', value=queue_text, inline=True)
+                self.message = await self.ctx.send(embed=self.embed, view=self)
+
+            async def update_embed(self):
+                player = self.bot.lavalink.player_manager.get(self.ctx.guild.id)
+                current = player.current
+                queue_text = ''
+                requester = self.ctx.guild.get_member(current.requester)
+                current_time = MusicTime(current.duration)
+                current_pos = MusicTime(player.position)
+
+                self.embed=discord.Embed(title="Меню музыки", color=0xE100FF, description=f"Сейчас: [{current.title}]({current.uri}) ({current_pos}/{current_time}) — {requester.mention}")
+                if player.queue:
+                    queue = player.queue[0+(5*self.queue_pos):5*(self.queue_pos+1)]
+                    for i,track in enumerate(queue):
+                        duration = MusicTime(track.duration)
+                        requester = self.ctx.guild.get_member(track.requester)
+                        queue_text += f'**{i+1+(5*self.queue_pos)} > ** [{track.title}]({track.uri}) ({duration}) — {requester.mention}\n'
+                else:
+                    queue_text = '**Очередь пустая**'
+                self.embed.add_field(name='Очередь', value=queue_text, inline=True)
+                await self.message.edit(embed=self.embed, view = self)
+
+
+            @discord.ui.button(emoji='⏪', row=0, disabled=True)
+            async def prev_queue(self, button, interaction):
+                player = self.controller.bot.lavalink.player_manager.get(self.ctx.guild.id)
+                
+                self.queue_pos -= 1
+
+                if self.queue_pos == 0:
+                    self.children[0].disabled = True
+
+                if self.queue_pos < math.ceil(len(player.queue)/5)-1:
+                    self.children[2].disabled = False
+                await self.update_embed()
+
+
+            @discord.ui.button(emoji='⏸️', row=0)
+            async def pause(self, button, interaction):
+                print('prev')
+            
+            @discord.ui.button(emoji='⏩', row=0)
+            async def next_queue(self, button, interaction):
+                player = self.controller.bot.lavalink.player_manager.get(self.ctx.guild.id)
+                
+                if self.queue_pos == 0:
+                    self.children[0].disabled = False
+                print(math.ceil(len(player.queue)/5))
+                
+                self.queue_pos += 1
+                if self.queue_pos == math.ceil(len(player.queue)/5)-1:
+                    self.children[2].disabled = True
+                await self.update_embed()
+
+            
+            @discord.ui.button(emoji='⏭️', row=1)
+            async def skip(self, button, interaction):
+                print('prev')
+            
+            @discord.ui.button(label='\u200b', row=1, disabled=True)
+            async def f1(self, button, interaction):
+                print('prev')
+
+            @discord.ui.button(emoji='⏹️', row=1)
+            async def stop(self, button, interaction):
+                print('prev')
+
+            @discord.ui.button(emoji='🔀', row=2)
+            async def mix(self, button, interaction):
+                print('prev')
+
+            @discord.ui.button(label='\u200b', row=2, disabled=True)
+            async def f2(self, button, interaction):
+                print('prev')
+            
+            @discord.ui.button(emoji='🔁', row=2)
+            async def loop(self, button, interaction):
+                print('prev')
+
+        menu = Menu(self.bot, ctx)
+
+        if menu.message is None:
+            await menu.send_embed()
+        else:
+            await menu.update_embed()
+        
 
 def setup(bot):
     bot.add_cog(Music(bot))
