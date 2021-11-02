@@ -98,8 +98,7 @@ class RankManager(commands.Cog):
                 self.clear_items()
                 embed = message.embeds[0]
                 embed.color = 0x38a22a
-                embed.title = 'Принято'
-                n = '\u200b'*5 
+                embed.title = 'Принято' 
                 embed.add_field(name='Повышен:', value=interaction.user.mention+f'\n||{interaction.user}||', inline=False)
                 await message.edit(embed=embed,view=self)
                 self.stop()

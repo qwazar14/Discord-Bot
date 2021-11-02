@@ -15,9 +15,9 @@ from configs import roles_config
 from configs.access_config import settings
 
 import modules.utils.ranks as rank_system
-from bot.core.configs import roles_config
-from bot.core.configs.access_config import settings
-from bot.core.modules.user import member_roles
+from configs import roles_config
+from configs.access_config import settings
+from modules.user import member_roles
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix=settings['botPrefix'], intents=intents)

@@ -2,7 +2,7 @@ import re
 
 import requests
 
-from bot.core.modules.utils import message_transformation
+from modules.utils import message_transformation
 
 
 async def get_statistics(ctx, nickname, mode):
