@@ -246,7 +246,7 @@ class Music(commands.Cog):
     @commands.command()
     async def skip(self, ctx):
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
-        player.skip()
+        await player.skip()
 
     @commands.command()
     async def shuffle(self, ctx):
@@ -356,13 +356,18 @@ class Music(commands.Cog):
 
             async def send_embed(self):
                 player = self.controller.bot.lavalink.player_manager.get(self.ctx.guild.id)
-                current = player.current
                 queue_text = ''
-                requester = self.ctx.guild.get_member(current.requester)
-                current_time = MusicTime(current.duration)
-                current_pos = MusicTime(player.position)
+                
+                if player.current:
+                    current = player.current
+                    requester = self.ctx.guild.get_member(current.requester)
+                    current_time = MusicTime(current.duration)
+                    current_pos = MusicTime(player.position)
+                    current_text = f"Сейчас: [{current.title}]({current.uri}) ({current_pos}/{current_time}) — {requester.mention}"
+                else:
+                    current_text = 'Сейчас ничего не играет'
 
-                self.embed=discord.Embed(title="Меню музыки", color=0xE100FF, description=f"Сейчас: [{current.title}]({current.uri}) ({current_pos}/{current_time}) — {requester.mention}")
+                self.embed=discord.Embed(title="Меню музыки", color=0xE100FF, description=current_text)
                 if player.queue:
                     queue = player.queue[0+(5*self.queue_pos):5*(self.queue_pos+1)]
                     for i,track in enumerate(queue):
@@ -376,13 +381,17 @@ class Music(commands.Cog):
 
             async def update_embed(self):
                 player = self.bot.lavalink.player_manager.get(self.ctx.guild.id)
-                current = player.current
                 queue_text = ''
-                requester = self.ctx.guild.get_member(current.requester)
-                current_time = MusicTime(current.duration)
-                current_pos = MusicTime(player.position)
+                if player.current:
+                    current = player.current
+                    requester = self.ctx.guild.get_member(current.requester)
+                    current_time = MusicTime(current.duration)
+                    current_pos = MusicTime(player.position)
+                    current_text = f"Сейчас: [{current.title}]({current.uri}) ({current_pos}/{current_time}) — {requester.mention}"
+                else:
+                    current_text = 'Сейчас ничего не играет'
 
-                self.embed=discord.Embed(title="Меню музыки", color=0xE100FF, description=f"Сейчас: [{current.title}]({current.uri}) ({current_pos}/{current_time}) — {requester.mention}")
+                self.embed=discord.Embed(title="Меню музыки", color=0xE100FF, description=current_text)
                 if player.queue:
                     queue = player.queue[0+(5*self.queue_pos):5*(self.queue_pos+1)]
                     for i,track in enumerate(queue):
@@ -411,7 +420,16 @@ class Music(commands.Cog):
 
             @discord.ui.button(emoji='⏸️', row=0)
             async def pause(self, button, interaction):
-                print('prev')
+                player = self.bot.lavalink.player_manager.get(self.ctx.guild.id)
+                
+                if not player.paused:
+                    await player.set_pause(True)
+                    self.children[1].emoji = '▶️'
+                else:
+                    await player.set_pause(False)
+                    self.children[1].emoji = '⏸️'
+
+                await self.update_embed()
             
             @discord.ui.button(emoji='⏩', row=0)
             async def next_queue(self, button, interaction):
@@ -424,12 +442,16 @@ class Music(commands.Cog):
                 self.queue_pos += 1
                 if self.queue_pos == math.ceil(len(player.queue)/5)-1:
                     self.children[2].disabled = True
+
                 await self.update_embed()
 
             
             @discord.ui.button(emoji='⏭️', row=1)
             async def skip(self, button, interaction):
-                print('prev')
+                player = self.controller.bot.lavalink.player_manager.get(self.ctx.guild.id)
+                await player.skip()
+
+                await self.update_embed()
             
             @discord.ui.button(label='\u200b', row=1, disabled=True)
             async def f1(self, button, interaction):
@@ -437,19 +459,42 @@ class Music(commands.Cog):
 
             @discord.ui.button(emoji='⏹️', row=1)
             async def stop(self, button, interaction):
-                print('prev')
+                player = self.controller.bot.lavalink.player_manager.get(self.ctx.guild.id)
 
-            @discord.ui.button(emoji='🔀', row=2)
+                player.queue = []
+                await player.play()
+
+                await self.update_embed()
+
+            @discord.ui.button(emoji='🔀', style=discord.ButtonStyle.red, row=2)
             async def mix(self, button, interaction):
-                print('prev')
+                player = self.controller.bot.lavalink.player_manager.get(self.ctx.guild.id)
+
+                if player.shuffle:
+                    self.children[6].style = discord.ButtonStyle.red
+                    player.set_shuffle(False)
+                else:
+                    self.children[6].style = discord.ButtonStyle.green
+                    player.set_shuffle(True)
+
+                await self.update_embed()
 
             @discord.ui.button(label='\u200b', row=2, disabled=True)
             async def f2(self, button, interaction):
                 print('prev')
             
-            @discord.ui.button(emoji='🔁', row=2)
+            @discord.ui.button(emoji='🔁', style=discord.ButtonStyle.red, row=2)
             async def loop(self, button, interaction):
-                print('prev')
+                player = self.controller.bot.lavalink.player_manager.get(self.ctx.guild.id)
+
+                if player.repeat:
+                    self.children[8].style = discord.ButtonStyle.red
+                    player.set_repeat(False)
+                else:
+                    self.children[8].style = discord.ButtonStyle.green
+                    player.set_repeat(True)
+
+                await self.update_embed()
 
         menu = Menu(self.bot, ctx)
 

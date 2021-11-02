@@ -14,10 +14,6 @@ class RankManager(commands.Cog):
     def __init__(self, client) -> None:
         self.client = client
 
-    @commands.Cog.listener()
-    async def on_message(message):
-        if ()
-
     @commands.command()
     async def down(self, ctx, user: discord.Member):
 
