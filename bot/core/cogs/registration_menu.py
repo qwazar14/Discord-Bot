@@ -113,14 +113,16 @@ class RegistrationMenu(commands.Cog):
 
                         @discord.ui.button(label='Да', style=nextcord.ButtonStyle.green)
                         async def get_user_squadron(self, button, interaction):
-                            await interaction.edit_original_message(content='*Введите клантег в формате XXXX')
+                            # await interaction.edit_original_message(content='*Введите клантег в формате XXXX')
+                            await interaction.response.send_message(content='*Введите клантег в формате XXXX', ephemeral=True)
 
                             try:
                                 squadron_user = await registration_functions.get_user_response(self.client, interaction)
-                                if squadron_user.lenght <= 5:
+                                if 5 >= len(squadron_user) > 1:
                                     new_nickname = f"[{squadron_user}] {nickname_user} ({name_user})"
-                                    await ctx.send()
+                                    # await ctx.send()
                                     await user.edit(nick=new_nickname)
+                                    await interaction.edit_original_message(content='*Регистрация завершена*')
                                 else:
                                     await interaction.edit_original_message(
                                         content='**ОШИБКА** Клантег должен состоять максимум из 5 символов')
@@ -131,12 +133,13 @@ class RegistrationMenu(commands.Cog):
                         @discord.ui.button(label='Нет', style=nextcord.ButtonStyle.red)
                         async def end_user_registration(self, button, interaction):
                             new_nickname = f"[-] {nickname_user} ({name_user})"
-                            await ctx.send(new_nickname)
+                            # await ctx.send(new_nickname)
                             await user.edit(nick=new_nickname)
+                            # await interaction.edit_original_message(content='*Регистрация завершена*')
                             await registration_functions.end_registration(self, interaction)
 
                     if timeout_error_call is not False:
-                        view_squadron_buttons = SquadronMenu()
+                        view_squadron_buttons = SquadronMenu(self.client)
                         await interaction.edit_original_message(content='*Вы состоите в полку?*',
                                                                 view=view_squadron_buttons)
                     else:
