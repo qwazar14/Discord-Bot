@@ -1,8 +1,8 @@
 from nextcord.ext import commands
 from nextcord.ext.commands.cog import Cog
 
-from bot.core.configs.access_config import settings
-from bot.core.modules.user import member_roles
+from configs.access_config import settings
+from modules.user import member_roles
 
 
 class RolesManager(Cog):

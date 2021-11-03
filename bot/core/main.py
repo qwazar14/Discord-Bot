@@ -8,12 +8,16 @@ from nextcord.ext import commands
 import modules.utils.error_controller as error_controller
 import modules.utils.message_transformation as message_transformation
 import modules.utils.ranks as rank_system
+from configs import roles_config
+from configs.access_config import settings
+from modules.user import member_roles
 from bot.core.configs import roles_config, util_config
 from bot.core.configs.access_config import settings
 from bot.core.modules.user import member_roles
 # from bot.core.modules.utils.registration_menu.registration_functions import timeout_error, get_user_response, \
 #     replace_comma_to_do, SquadronMenu, user_without_squadron
 import bot.core.modules.utils.registration_menu.registration_functions as registration_functions
+
 
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix=settings['botPrefix'], intents=intents)

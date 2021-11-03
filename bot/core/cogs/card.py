@@ -2,8 +2,8 @@ import nextcord as discord
 from nextcord.ext import commands
 
 
-from bot.core.configs.access_config import settings
-from bot.core.modules.user import units_roles, parse_stats, card_generator
+from configs.access_config import settings
+from modules.user import units_roles, parse_stats, card_generator
 
 
 class Card(commands.Cog):

@@ -15,7 +15,6 @@ class RankManager(commands.Cog):
         self.client = client
 
 
-
     @commands.command()
     async def down(self, ctx, user: discord.Member):
 
@@ -75,8 +74,9 @@ class RankManager(commands.Cog):
 
     @commands.command()
     async def up(self, ctx):
+        
         class View(nextcord.ui.View):
-
+        
             @discord.ui.button(label = 'Повысить', style = nextcord.ButtonStyle.green)
             async def rank_up(self, button, interaction):
                 new_rank = RankSystem.get_next_member_rank(ctx.author)
@@ -96,8 +96,7 @@ class RankManager(commands.Cog):
                 self.clear_items()
                 embed = message.embeds[0]
                 embed.color = 0x38a22a
-                embed.title = 'Принято'
-                n = '\u200b'*5 
+                embed.title = 'Принято' 
                 embed.add_field(name='Повышен:', value=interaction.user.mention+f'\n||{interaction.user}||', inline=False)
                 await message.edit(embed=embed,view=self)
                 self.stop()
