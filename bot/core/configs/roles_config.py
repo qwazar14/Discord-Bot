@@ -37,9 +37,9 @@ soldier_roles = {
 }
 
 unit_roles = {
-    899728823547998268: 'tanks',
-    899728848025964585: 'planes',
-    900870446097002506: 'zsu'
+    'tanks': 900869212514447390,
+    'planes': 900869368588677150,
+    'zsu': 900870446097002506
 }
 
 optional_category_roles = {
