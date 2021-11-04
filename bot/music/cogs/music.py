@@ -6,11 +6,12 @@ from dataclasses import dataclass
 import nextcord as discord
 from nextcord.ext.commands.context import P
 import lavalink
-from nextcord.ext import commands
+from nextcord.ext import commands, tasks
 from nextcord.types.components import ButtonStyle
 from nextcord.ui import view
 from nextcord.webhook import async_
-
+import pymysql
+from configs.bd_config import CONFIG
 url_rx = re.compile(r'https?://(?:www\.)?.+')
 
 
@@ -32,7 +33,7 @@ class LavalinkVoiceClient(discord.VoiceClient):
                     2333,
                     'pass',
                     'us',
-                    'default-node')
+                    f'node-bot-{self.id}')
             self.lavalink = self.client.lavalink
         
     async def on_voice_server_update(self, data):
@@ -102,15 +103,21 @@ class MusicTime:
 # MUSIC CLASS
 
 class Music(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client, id):
         self.client = client
+        self.id = id
         self.controllers = {}
-
-        if not hasattr(client, 'lavalink'):  # This ensures the client isn't overwritten during cog reloads.
+        self.con = pymysql.connect(
+            host=CONFIG['host'],
+            user=CONFIG['user'],
+            password=CONFIG['password'],
+            database=CONFIG['db'])
+        if not hasattr(self.client, 'lavalink'):  # This ensures the client isn't overwritten during cog reloads.
             client.lavalink = lavalink.Client(client.user.id)
-            client.lavalink.add_node('127.0.0.1', 2333, 'pass', 'eu', 'default-node')  # Host, Port, Password, Region, Name
+            client.lavalink.add_node('127.0.0.1', 2333, 'pass', 'eu', f'node-bot-{self.id}')  # Host, Port, Password, Region, Name
 
         lavalink.add_event_hook(self.track_hook)
+
 
     def cog_unload(self):
         """ Cog unload handler. This removes any event hooks that were registered. """
@@ -147,7 +154,8 @@ class Music(commands.Cog):
 
         # These are commands that require the client to join a voicechannel (i.e. initiating playback).
         # Commands such as volume/skip etc don't require the client to be in a voicechannel so don't need listing here.
-        should_connect = ctx.command.name in ('play',)
+        print(ctx.command.name)
+        should_connect = ctx.command.name in ('play','start',)
 
         if not ctx.author.voice or not ctx.author.voice.channel:
             # Our cog_command_error handler catches this and sends it to the voicechannel.
@@ -179,40 +187,29 @@ class Music(commands.Cog):
             guild = self.client.get_guild(guild_id)
             await guild.voice_client.disconnect(force=True)
 
+    @commands.command()
+    async def start(self,ctx):
+        self.musicloop.start()
+
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query: str):
-        """ Searches and plays a song from a given query. """
-        # Get the player for this guild from cache.
         player = self.client.lavalink.player_manager.get(ctx.guild.id)
-        # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
         query = query.strip('<>')
 
-        # Check if the user input might be a URL. If it isn't, we can Lavalink do a YouTube search for it instead.
-        # SoundCloud searching is possible by prefixing "scsearch:" instead.
         if not url_rx.match(query):
             query = f'ytsearch:{query}'
 
-        # Get the results for the query from Lavalink.
         results = await player.node.get_tracks(query)
 
-        # Results could be None if Lavalink returns an invalid response (non-JSON/non-200 (OK)).
-        # ALternatively, resullts['tracks'] could be an empty array if the query yielded no tracks.
         if not results or not results['tracks']:
             return await ctx.send('Nothing found!')
 
         embed = discord.Embed(color=discord.Color.blurple())
 
-        # Valid loadTypes are:
-        #   TRACK_LOADED    - single video/direct URL)
-        #   PLAYLIST_LOADED - direct URL to playlist)
-        #   SEARCH_RESULT   - query prefixed with either ytsearch: or scsearch:.
-        #   NO_MATCHES      - query yielded no results
-        #   LOAD_FAILED     - most likely, the video encountered an exception during loading.
         if results['loadType'] == 'PLAYLIST_LOADED':
             tracks = results['tracks']
 
             for track in tracks:
-                # Add all of the tracks from the playlist to the queue.
                 player.add(requester=ctx.author.id, track=track)
 
             embed.title = 'Playlist Enqueued!'
@@ -222,17 +219,30 @@ class Music(commands.Cog):
             embed.title = 'Track Enqueued'
             embed.description = f'[{track["info"]["title"]}]({track["info"]["uri"]})'
 
-            # You can attach additional information to audiotracks through kwargs, however this involves
-            # constructing the AudioTrack class yourself.
             track = lavalink.models.AudioTrack(track, ctx.author.id, recommended=True)
             player.add(requester=ctx.author.id, track=track)
 
-        await ctx.send(embed=embed)
+        #await ctx.send(embed=embed)
 
-        # We don't want to call .play() if the player is playing as that will effectively skip
-        # the current track.
         if not player.is_playing:
             await player.play()
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        voice_state = member.guild.voice_client
+        if member.id == self.client.user.id:
+            if after.channel is None:
+                with self.con.cursor() as cursor:
+
+                    cursor.execute(f"UPDATE `MusicDB` SET `channel`='' WHERE `id`={self.id}")
+                    self.con.commit()
+
+        if voice_state is None:
+            return 
+
+        if len(voice_state.channel.members) == 1:
+            await voice_state.disconnect(cls=LavalinkVoiceClient)
+
 
     @commands.command()
     async def pause(self, ctx):
@@ -339,6 +349,57 @@ class Music(commands.Cog):
         # Disconnect from the voice channel.
         await ctx.voice_client.disconnect(force=True)
         await ctx.send('*⃣ | Disconnected.')
+
+    @tasks.loop(seconds=1)
+    async def musicloop(self):
+        with self.con.cursor() as cursor:
+            cursor.execute(f"SELECT `channel`,`add_to_queue`,`queue_author` FROM `MusicDB` WHERE `id`={self.id}")
+            data = cursor.fetchone()
+            player = self.client.lavalink.player_manager.get(398857722159824907)
+            if data[1] != '':
+                if not self.client.voice_clients is None:
+                    if not player.is_connected:
+                        player.store('channel', int(data[0]))
+                        await self.client.get_channel(int(data[0])).connect(cls=LavalinkVoiceClient)
+                    authors = data[2].split(',')
+                    querry_list = data[1].split(',')
+                    authors.pop()
+                    querry_list.pop()
+                    print(f'QUERRY: {querry_list}')
+                    for i, query in enumerate(querry_list):
+                        print(f'BOT-{self.id}: {query}')
+                        author = int(authors[i])
+                        query = query.strip('<>')
+
+                        if not url_rx.match(query):
+                            query = f'ytsearch:{query}'
+
+                        results = await player.node.get_tracks(query)
+
+                        embed = discord.Embed(color=discord.Color.blurple())
+
+                        if results['loadType'] == 'PLAYLIST_LOADED':
+                            tracks = results['tracks']
+
+                            for track in tracks:
+                                player.add(requester=author, track=track)
+
+                            embed.title = 'Playlist Enqueued!'
+                            embed.description = f'{results["playlistInfo"]["name"]} - {len(tracks)} tracks'
+                        else:
+                            track = results['tracks'][0]
+                            embed.title = 'Track Enqueued'
+                            embed.description = f'[{track["info"]["title"]}]({track["info"]["uri"]})'
+
+                            track = lavalink.models.AudioTrack(track, author, recommended=True)
+                            player.add(requester=author, track=track)
+
+                        #await ctx.send(embed=embed)
+
+                        if not player.is_playing:
+                            await player.play()
+                    cursor.execute(f"UPDATE `MusicDB` SET `add_to_queue`='',`queue_author`='' WHERE `id`={self.id}")
+                    self.con.commit()
 
 
     @commands.command()
@@ -504,5 +565,5 @@ class Music(commands.Cog):
             await menu.update_embed()
         
 
-def setup(client):
-    client.add_cog(Music(client))
+def setup(client, id):
+    client.add_cog(Music(client, id))

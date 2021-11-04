@@ -1,15 +1,11 @@
 import datetime
-import os
 import re
-import sys
 import time
 
 import nextcord as discord
 import pymysql
 import pymysql.cursors
 
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from configs.bd_config import CONFIG
 from configs.access_config import settings as access_config
 from configs import roles_config
@@ -26,38 +22,6 @@ class Moderation(commands.Cog):
             user=CONFIG['user'],
             password=CONFIG['password'],
             database=CONFIG['db'])
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-
-        if message.author == self.bot.user:
-            return
-
-        counter = 0
-        async for check_message in message.channel.history(limit=10):
-            if check_message.author == message.author and not check_message.author.bot:
-                if check_message.content == message.content and message.content[0] != access_config['botPrefix']:
-                    counter += 1
-        if counter >= 3:
-            async for check_message in message.channel.history(limit=10):
-                if check_message.author == message.author:
-                    await check_message.delete()
-            with self.con.cursor() as cursor:
-                id = datetime.now().timestamp()
-                cursor.execute(
-                    f"INSERT INTO `WarnsDB` (`id`, `gid`, `uid`, `w_reason`, `w_by`, `w_time`) VALUES ('{id}', '{message.author.guild.id}', '{message.author.id}', 'Спам', '{self.bot.user.id}', '{time.strftime('%b %d %Y')}')")
-            self.con.commit()
-            embed = discord.Embed(
-                description=f"{message.author} получил предупреждение | Причина: Спам",
-                color=0xe871ff
-            )
-            await message.channel.send(embed=embed)
-            emb = discord.Embed(
-                title=f"Сервер {message.author.guild}",
-                description=f"Вы получили предупреждение | Причина: Спам",
-                color=0xe871ff
-            )
-            await message.author.send(embed=emb)
 
     @commands.command(
         usage="clear [лимит]",

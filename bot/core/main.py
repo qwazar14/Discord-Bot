@@ -6,7 +6,6 @@ import re
 import nextcord
 import nextcord as discord
 
-from nextcord.components import Button
 from nextcord.ext import commands
 
 import modules.utils.error_controller as error_controller
