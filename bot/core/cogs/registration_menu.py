@@ -66,12 +66,10 @@ class RegistrationMenu(commands.Cog):
                                 await user.edit(nick=new_nickname)
                                 await user.add_roles(guild_id.get_role(roles_config.util_categories['rank_category']))
                                 await user.add_roles(
-                                    guild_id.get_role(roles_config.util_categories['unit_type_category']))
-                                await user.add_roles(
                                     guild_id.get_role(roles_config.util_categories['optional_category']))
                                 await user.add_roles(
                                     guild_id.get_role(roles_config.util_categories['general_category']))
-                                await user.add_roles(guild_id.get_role(roles_config.unit_roles['planes']))
+                                await user.add_roles(guild_id.get_role(roles_config.optional_category_roles['warthunder']))
                                 await user.add_roles(guild_id.get_role(roles_config.general_category_roles['player']))
                                 await user.remove_roles(
                                     guild_id.get_role(roles_config.general_category_roles['new_player']))

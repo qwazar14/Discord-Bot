@@ -43,8 +43,9 @@ unit_roles = {
 }
 
 optional_category_roles = {
-    900899011815407636: 'veteran',
-    900870625084735489: 'universal'
+    'veteran': 900899011815407636,
+    'universal': 900870625084735489,
+    'warthunder': 904792459995926538
 }
 general_category_roles = {
     'player': 871761260155388064,

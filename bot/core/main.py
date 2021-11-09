@@ -1,22 +1,14 @@
-import asyncio
 import os
 
 import nextcord
 import nextcord as discord
 from nextcord.ext import commands
 
-import modules.utils.error_controller as error_controller
-import modules.utils.message_transformation as message_transformation
-import modules.utils.ranks as rank_system
-from configs import roles_config
-from configs.access_config import settings
-from modules.user import member_roles
-from bot.core.configs import roles_config, util_config
+import bot.core.modules.utils.error_controller as error_controller
+
+from bot.core.configs import roles_config
 from bot.core.configs.access_config import settings
 from bot.core.modules.user import member_roles
-# from bot.core.modules.utils.registration_menu.registration_functions import timeout_error, get_user_response, \
-#     replace_comma_to_do, SquadronMenu, user_without_squadron
-import bot.core.modules.utils.registration_menu.registration_functions as registration_functions
 
 
 intents = discord.Intents.all()
@@ -47,9 +39,21 @@ async def help(ctx):
 '''
 
 
-@client.command()
-async def rules(ctx):
-    await message_transformation.send_rules_to_the_channel(ctx)
+# @client.command()
+# async def rules(ctx):
+#     embed=discord.Embed(title="1. Общие правила", color=0xe100ff)
+#     embed.set_thumbnail(url="https://i.imgur.com/mhSJtPm.png")
+#     embed.add_field(name="1.1 На этом сервере не допускается расовая нетерпимость или крайняя ненависть любого рода.", value="Наказание: Бан или предупреждение, в зависимости от содержания", inline=True)
+#     embed.add_field(name="1.2 Не будьте токсиком, который портит веселье другим. Это включает в себя нацеливание на одного человека и обсирание его.", value="Наказание: Бан или предупреждение, в зависимости от содержания", inline=True)
+#     embed.add_field(name="1.3 Не сливайте личную информацию о других членах сервера без их разрешения. Это относится и к личке.", value="Наказание: предупреждение или бан в зависимости от серьезности утечки", inline=True)
+#     embed.add_field(name="1.4 Не публикуйте nsfw-контент вне #nsfw.", value="Наказание: Бан", inline=True)
+#     embed.add_field(name="1.5 Не выдавайте себя за ботов или любого члена сервера. (Через имя, ник или картинку профиля)", value="Наказание: Предупреждение и бан в случае продолжения", inline=True)
+#     embed.add_field(name="1.6 Запрещен спам ЛЮБОГО рода, включая @everyone/@here спам, спам реакции, копирование/вставка текста, @mentions в AFK.", value="Наказание: Это приведет к предупреждению и бану в случае продолжения.", inline=True)
+#     embed.add_field(name="1.7 Не пингуйте роли без веской причины. Пингуйте роли только в экстренных случаях.", value="Наказание: Предупреждение", inline=True)
+#     embed.add_field(name="1.8 Не выпрашивать роль/звание. Нам это не нужно, и если мы посчитаем, что вы заслуживаете роли, мы вам ее дадим.", value="Наказание: Предупреждение", inline=True)
+#     embed.add_field(name="1.9 Используйте каналы по назначению, (в каналах «музыка» – запускайте музыку и т.д)", value="Наказание: Устное предупреждение и предупреждение в случае продолжения", inline=True)
+#     embed.add_field(name="1.10 Не вступайте в дискуссию с офицерами на сервере после решения о наказании (например, получения предупреждения), если вы считаете, что предупреждение было неправильным, пожалуйста, решите этот вопрос в личке с тем, кто выписал предупредил.", value="Наказание: Предупреждение", inline=True)
+#     await ctx.send(embed=embed)
 
 
 @client.command()

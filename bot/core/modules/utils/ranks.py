@@ -1,4 +1,4 @@
-from configs import roles_config
+from bot.core.configs import roles_config
 
 
 def get_all_ranks_dict():
