@@ -19,7 +19,8 @@ bots = []
 
 for bot in data:
     bots.append(subprocess.Popen(f'python music/bot.py "{bot[0]}" "{bot[1]}"'))
-
+    sleep(1)
+    
 def kill_child():
     for bot in bots:
         os.kill(bot.pid, signal.SIGTERM)

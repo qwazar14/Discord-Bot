@@ -26,6 +26,5 @@ async def on_ready():
     music.setup(client, id)
     print(f'BOT-{id} IS READY')
 
-
 client.run(token)
 

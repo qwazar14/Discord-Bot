@@ -4,11 +4,11 @@ import nextcord
 import nextcord as discord
 from nextcord.ext import commands
 
-import bot.core.modules.utils.ranks as rank_system
+import modules.utils.ranks as rank_system
 
-import bot.core.modules.utils.registration_menu.registration_functions as registration_functions
-from bot.core.configs import roles_config
-from bot.core.configs.access_config import settings
+import modules.utils.registration_menu.registration_functions as registration_functions
+from configs import roles_config
+from configs.access_config import settings
 
 
 class RegistrationMenu(commands.Cog):

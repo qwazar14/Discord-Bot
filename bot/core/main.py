@@ -11,12 +11,12 @@ import modules.utils.ranks as rank_system
 from configs import roles_config
 from configs.access_config import settings
 from modules.user import member_roles
-from bot.core.configs import roles_config, util_config
-from bot.core.configs.access_config import settings
-from bot.core.modules.user import member_roles
-# from bot.core.modules.utils.registration_menu.registration_functions import timeout_error, get_user_response, \
+from configs import roles_config, util_config
+from configs.access_config import settings
+from modules.user import member_roles
+# from modules.utils.registration_menu.registration_functions import timeout_error, get_user_response, \
 #     replace_comma_to_do, SquadronMenu, user_without_squadron
-import bot.core.modules.utils.registration_menu.registration_functions as registration_functions
+import modules.utils.registration_menu.registration_functions as registration_functions
 
 
 intents = discord.Intents.all()
@@ -46,11 +46,11 @@ async def help(ctx):
     await help_message.send_help_message(ctx)
 '''
 
-
+'''
 @client.command()
 async def rules(ctx):
     await message_transformation.send_rules_to_the_channel(ctx)
-
+'''
 
 @client.command()
 async def t(ctx):
@@ -130,14 +130,40 @@ async def load(ctx, extension):
     if result != "":
         await ctx.send(result)
 
+@commands.has_any_role(roles_config.discord_roles['admin'])
+@client.command()
+async def mmenu(ctx, k: int):
+    embed=discord.Embed(title='⠀'*14+'Музыкальное меню 16', color=0xe100ff)
+    value = '═'*int(k-1)+'🞈'+'─'*int(49-k)+'\n'+'⠀'*17+'##:##:##/##:##:##'
+    embed.add_field(name='\u200b', value=f'{value}')
+    await ctx.send(embed=embed)
 
-# @commands.has_any_role(roles_config.discord_roles['admin'])
-# @client.command()
-# async def rules(ctx):
-#     user = ctx.author
-#     print(f'[LOG] {user} called command "rules"')
-#     await message_transformation.send_rules_to_the_channel(ctx)
-#     print('[LOG] "rules" command done!')
+
+@commands.has_any_role(roles_config.discord_roles['admin'])
+@client.command()
+async def rules(ctx):
+    embed=discord.Embed(title='Общие правила', color=0xe100ff)
+    embed.add_field(name="\u200b", value='```css\n1.1 На этом сервере не допускается расовая нетерпимость или крайняя ненависть любого рода.\n[Бан или предупреждение, в зависимости от содержания]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.2 Не будьте токсиком, который портит веселье другим. Это включает в себя нацеливание на одного человека и обсирание его.\n[Бан или предупреждение, в зависимости от содержания]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.3 Не сливайте личную информацию о других членах сервера без их разрешения. Это относится и к личке.\n[Предупреждение или бан в зависимости от серьезности утечки]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.4 Не публикуйте nsfw-контент вне #nsfw.\n[Бан]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.5 Не выдавайте себя за ботов или любого члена сервера. (Через имя, ник или картинку профиля)\n[Предупреждение и бан в случае продолжения]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.6 Запрещен спам ЛЮБОГО рода, включая @everyone/@here спам, спам реакции, копирование/вставка текста, @mentions в AFK.\n[Предупреждению и бан в случае продолжения.]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.7 Не пингуйте роли без веской причины. Пингуйте роли только в экстренных случаях.\n[Предупреждение]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.8 Не выпрашивать роль/звание. Нам это не нужно, и если мы посчитаем, что вы заслуживаете роли, мы вам ее дадим.\n[Предупреждение]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.9 Используйте каналы по назначению, (в каналах «музыка» – запускайте музыку и т.д)\n[Устное предупреждение и предупреждение в случае продолжения]```', inline=False)
+    
+    embed.add_field(name="\u200b", value='```css\n1.10 Не вступайте в дискуссию с офицерами на сервере после решения о наказании (например, получения предупреждения), если вы считаете, что предупреждение было неправильным, пожалуйста, решите этот вопрос в личке с тем, кто выписал предупредил.\n[Предупреждение]```', inline=False)
+    
+    await ctx.send(embed=embed)
 
 
 # @client.command()

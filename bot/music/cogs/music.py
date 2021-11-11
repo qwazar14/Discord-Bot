@@ -12,6 +12,7 @@ from nextcord.ui import view
 from nextcord.webhook import async_
 import pymysql
 from configs.bd_config import CONFIG
+from configs import roles_config
 url_rx = re.compile(r'https?://(?:www\.)?.+')
 
 
@@ -88,6 +89,7 @@ class MusicTime:
     
     def __init__(self, millis) -> None:
         seconds=(millis/1000)%60
+        self.total_seconds = millis/1000
         self.seconds = int(seconds)
         minutes=(millis/(1000*60))%60
         self.minutes = int(minutes)
@@ -100,6 +102,8 @@ class MusicTime:
         else:
             return f'{self.minutes:0>2.0f}:{self.seconds:0>2.0f}'
 
+    def __truediv__(self, other):
+        return self.total_seconds / other.total_seconds
 # MUSIC CLASS
 
 class Music(commands.Cog):
@@ -107,6 +111,7 @@ class Music(commands.Cog):
         self.client = client
         self.id = id
         self.controllers = {}
+        self.menu = self.Menu(client, id)
         self.con = pymysql.connect(
             host=CONFIG['host'],
             user=CONFIG['user'],
@@ -188,6 +193,7 @@ class Music(commands.Cog):
             await guild.voice_client.disconnect(force=True)
 
     @commands.command()
+    @commands.has_any_role(roles_config.discord_roles['admin'])    
     async def start(self,ctx):
         self.musicloop.start()
 
@@ -230,18 +236,40 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         voice_state = member.guild.voice_client
+        with self.con.cursor() as cursor:
+            cursor.execute(f"SELECT `menu_channel` FROM `MusicDB` WHERE `id`={self.id}")
+            cur_channel = cursor.fetchone()[0]
+            print(cur_channel)
+        if cur_channel != None: 
+            channel = self.client.guilds[0].get_channel(int(cur_channel))
+            print('CHANNEL:', channel)
+            if after.channel:
+                if after.channel.id == channel.id:
+                    await channel.set_permissions(target=member, view_channel=True, read_messages=True, read_message_history=True, send_messages=True)
+            if before.channel:
+                if before.channel.id == channel.id:
+                    await channel.set_permissions(target=member, overwrite=None) 
         if member.id == self.client.user.id:
+            channel = self.client.guilds[0].get_channel(int(cur_channel))
             if after.channel is None:
                 with self.con.cursor() as cursor:
 
                     cursor.execute(f"UPDATE `MusicDB` SET `channel`='' WHERE `id`={self.id}")
                     self.con.commit()
+                for member in before.channel.members:
+                    await channel.set_permissions(target=member, overwrite=None)    
+            else:
+                for member in after.channel.members:
+                    await channel.set_permissions(target=member, view_channel=True, read_messages=True, read_message_history=True, send_messages=True)
+
 
         if voice_state is None:
             return 
 
         if len(voice_state.channel.members) == 1:
             await voice_state.disconnect(cls=LavalinkVoiceClient)
+            
+        
 
 
     @commands.command()
@@ -349,16 +377,163 @@ class Music(commands.Cog):
         # Disconnect from the voice channel.
         await ctx.voice_client.disconnect(force=True)
         await ctx.send('*⃣ | Disconnected.')
+    class Menu(discord.ui.View):
 
-    @tasks.loop(seconds=1)
+        def __init__(self, client, id, *, timeout=None):
+            super().__init__(timeout=timeout)
+            self.con = pymysql.connect(
+                        host=CONFIG['host'],
+                        user=CONFIG['user'],
+                        password=CONFIG['password'],
+                        database=CONFIG['db'])
+            with self.con.cursor() as cursor:
+                cursor.execute(f"SELECT `menu_channel` FROM `MusicDB` WHERE `id`={id}")
+                data = cursor.fetchone()    
+            self.menu_channel = data[0]
+            self.client = client
+            self.controller = self
+            self.queue_pos = 0
+            self.message = None
+
+        def center_text(self, text, n):
+            return '⠀'*n+text
+        
+        async def send_embed(self):
+            
+            self.embed=discord.Embed(title="Меню музыки", color=0xE100FF)
+            channel = self.client.guilds[0].get_channel(int(self.menu_channel))
+            self.message = await channel.send(embed=self.embed, view=self)
+
+        async def update_embed(self):
+            player = self.client.lavalink.player_manager.get(self.client.guilds[0].id)
+            queue_text = ''
+            if player.current:
+                current = player.current
+                requester = self.client.guilds[0].get_member(current.requester)
+                current_time = MusicTime(current.duration)
+                current_pos = MusicTime(player.position)
+                diff = current_pos / current_time
+                timeline_len = max(int(49*diff), 1)
+                player_value = '**'+'═'*int(timeline_len-1)+'🞈'+'─'*int(49-timeline_len)+'\n'+self.center_text(f'{current_pos}/{current_time}', 22)+'**'
+                current_text = f"[{current.title}]({current.uri}) — {requester.mention}"
+            else:
+                player_value = '═'*49+'\n'+self.center_text('--:--:--/--:--:--', 22)
+                current_text = self.center_text('Сейчас ничего не играет', 18)
+            
+            self.embed=discord.Embed(title=self.center_text('Музыкальное меню', 16), color=0xE100FF, description=current_text)
+            if player.queue:
+                queue = player.queue[0+(5*self.queue_pos):5*(self.queue_pos+1)]
+                for i,track in enumerate(queue):
+                    duration = MusicTime(track.duration)
+                    requester = self.client.guilds[0].get_member(track.requester)
+                    queue_text += f'**{i+1+(5*self.queue_pos)}) ** [{track.title}]({track.uri}) ({duration})\nАвтор: {requester.mention}\n'+self.center_text('├'+'─'*39+'┤',5)+'\n'
+            else:
+                queue_text = '\u200b' 
+            self.embed.add_field(name='\u200b', value=player_value, inline=False)
+            self.embed.add_field(name=self.center_text('Очередь', 23), value=queue_text, inline=True)
+            await self.message.edit(embed=self.embed, view = self)
+
+        @discord.ui.button(emoji='⏪', row=0, disabled=True)
+        async def prev_queue(self, button, interaction):
+            player = self.controller.client.lavalink.player_manager.get(self.client.guilds[0].id)
+            
+            self.queue_pos -= 1
+
+            if self.queue_pos == 0:
+                self.children[0].disabled = True
+
+            if self.queue_pos < math.ceil(len(player.queue)/5)-1:
+                self.children[2].disabled = False
+            await self.update_embed()
+
+        @discord.ui.button(emoji='⏸️', row=0)
+        async def pause(self, button, interaction):
+            player = self.client.lavalink.player_manager.get(self.client.guilds[0].id)
+            
+            if not player.paused:
+                await player.set_pause(True)
+                self.children[1].emoji = '▶️'
+            else:
+                await player.set_pause(False)
+                self.children[1].emoji = '⏸️'
+
+            await self.update_embed()
+        
+        @discord.ui.button(emoji='⏩', row=0)
+        async def next_queue(self, button, interaction):
+            player = self.controller.client.lavalink.player_manager.get(self.client.guilds[0].id)
+            
+            if self.queue_pos == 0:
+                self.children[0].disabled = False
+            print(math.ceil(len(player.queue)/5))
+            
+            self.queue_pos += 1
+            if self.queue_pos == math.ceil(len(player.queue)/5)-1:
+                self.children[2].disabled = True
+
+            await self.update_embed()
+                
+        @discord.ui.button(emoji='⏭️', row=1)
+        async def skip(self, button, interaction):
+            player = self.controller.client.lavalink.player_manager.get(self.client.guilds[0].id)
+            await player.skip()
+
+            await self.update_embed()
+        
+        @discord.ui.button(label='\u200b', row=1, disabled=True)
+        async def f1(self, button, interaction):
+            print('prev')
+
+        @discord.ui.button(emoji='⏹️', row=1)
+        async def stop(self, button, interaction):
+            player = self.controller.client.lavalink.player_manager.get(self.client.guilds[0].id)
+
+            player.queue = []
+            await player.play()
+
+            await self.update_embed()
+            
+        @discord.ui.button(emoji='🔀', style=discord.ButtonStyle.red, row=2)
+        async def mix(self, button, interaction):
+            player = self.controller.client.lavalink.player_manager.get(self.client.guilds[0].id)
+
+            if player.shuffle:
+                self.children[6].style = discord.ButtonStyle.red
+                player.set_shuffle(False)
+            else:
+                self.children[6].style = discord.ButtonStyle.green
+                player.set_shuffle(True)
+
+            await self.update_embed()
+
+        @discord.ui.button(label='\u200b', row=2, disabled=True)
+        async def f2(self, button, interaction):
+            print('prev')
+        
+        @discord.ui.button(emoji='🔁', style=discord.ButtonStyle.red, row=2)
+        async def loop(self, button, interaction):
+            player = self.controller.client.lavalink.player_manager.get(self.client.guilds[0].id)
+
+            if player.repeat:
+                self.children[8].style = discord.ButtonStyle.red
+                player.set_repeat(False)
+            else:
+                self.children[8].style = discord.ButtonStyle.green
+                player.set_repeat(True)
+
+            await self.update_embed()
+            
+    @tasks.loop(seconds=0.9)
     async def musicloop(self):
+        
         with self.con.cursor() as cursor:
-            cursor.execute(f"SELECT `channel`,`add_to_queue`,`queue_author` FROM `MusicDB` WHERE `id`={self.id}")
+            cursor.execute(f"SELECT `channel`,`add_to_queue`,`queue_author`,`menu_channel` FROM `MusicDB` WHERE `id`={self.id}")
             data = cursor.fetchone()
             player = self.client.lavalink.player_manager.get(398857722159824907)
             if data[1] != '':
-                if not self.client.voice_clients is None:
+                if data[0] != '':
                     if not player.is_connected:
+                        print(data[0])
                         player.store('channel', int(data[0]))
                         await self.client.get_channel(int(data[0])).connect(cls=LavalinkVoiceClient)
                     authors = data[2].split(',')
@@ -400,169 +575,13 @@ class Music(commands.Cog):
                             await player.play()
                     cursor.execute(f"UPDATE `MusicDB` SET `add_to_queue`='',`queue_author`='' WHERE `id`={self.id}")
                     self.con.commit()
-
-
-    @commands.command()
-    async def mmenu(self, ctx):
-
-        class Menu(discord.ui.View):
-
-            def __init__(self, client, ctx, *, timeout=None):
-                super().__init__(timeout=timeout)
-                self.client = client
-                self.ctx = ctx
-                self.controller = Music(self.client)
-                self.queue_pos = 0
-                self.message = None
-
-            async def send_embed(self):
-                player = self.controller.client.lavalink.player_manager.get(self.ctx.guild.id)
-                queue_text = ''
-                
-                if player.current:
-                    current = player.current
-                    requester = self.ctx.guild.get_member(current.requester)
-                    current_time = MusicTime(current.duration)
-                    current_pos = MusicTime(player.position)
-                    current_text = f"Сейчас: [{current.title}]({current.uri}) ({current_pos}/{current_time}) — {requester.mention}"
-                else:
-                    current_text = 'Сейчас ничего не играет'
-
-                self.embed=discord.Embed(title="Меню музыки", color=0xE100FF, description=current_text)
-                if player.queue:
-                    queue = player.queue[0+(5*self.queue_pos):5*(self.queue_pos+1)]
-                    for i,track in enumerate(queue):
-                        duration = MusicTime(track.duration)
-                        requester = self.ctx.guild.get_member(track.requester)
-                        queue_text += f'**{i+1} > ** [{track.title}]({track.uri}) ({duration}) — {requester.mention}\n'
-                else:
-                    queue_text = '**Очередь пустая**'
-                self.embed.add_field(name='Очередь', value=queue_text, inline=True)
-                self.message = await self.ctx.send(embed=self.embed, view=self)
-
-            async def update_embed(self):
-                player = self.client.lavalink.player_manager.get(self.ctx.guild.id)
-                queue_text = ''
-                if player.current:
-                    current = player.current
-                    requester = self.ctx.guild.get_member(current.requester)
-                    current_time = MusicTime(current.duration)
-                    current_pos = MusicTime(player.position)
-                    current_text = f"Сейчас: [{current.title}]({current.uri}) ({current_pos}/{current_time}) — {requester.mention}"
-                else:
-                    current_text = 'Сейчас ничего не играет'
-
-                self.embed=discord.Embed(title="Меню музыки", color=0xE100FF, description=current_text)
-                if player.queue:
-                    queue = player.queue[0+(5*self.queue_pos):5*(self.queue_pos+1)]
-                    for i,track in enumerate(queue):
-                        duration = MusicTime(track.duration)
-                        requester = self.ctx.guild.get_member(track.requester)
-                        queue_text += f'**{i+1+(5*self.queue_pos)} > ** [{track.title}]({track.uri}) ({duration}) — {requester.mention}\n'
-                else:
-                    queue_text = '**Очередь пустая**'
-                self.embed.add_field(name='Очередь', value=queue_text, inline=True)
-                await self.message.edit(embed=self.embed, view = self)
-
-
-            @discord.ui.button(emoji='⏪', row=0, disabled=True)
-            async def prev_queue(self, button, interaction):
-                player = self.controller.client.lavalink.player_manager.get(self.ctx.guild.id)
-                
-                self.queue_pos -= 1
-
-                if self.queue_pos == 0:
-                    self.children[0].disabled = True
-
-                if self.queue_pos < math.ceil(len(player.queue)/5)-1:
-                    self.children[2].disabled = False
-                await self.update_embed()
-
-
-            @discord.ui.button(emoji='⏸️', row=0)
-            async def pause(self, button, interaction):
-                player = self.client.lavalink.player_manager.get(self.ctx.guild.id)
-                
-                if not player.paused:
-                    await player.set_pause(True)
-                    self.children[1].emoji = '▶️'
-                else:
-                    await player.set_pause(False)
-                    self.children[1].emoji = '⏸️'
-
-                await self.update_embed()
-            
-            @discord.ui.button(emoji='⏩', row=0)
-            async def next_queue(self, button, interaction):
-                player = self.controller.client.lavalink.player_manager.get(self.ctx.guild.id)
-                
-                if self.queue_pos == 0:
-                    self.children[0].disabled = False
-                print(math.ceil(len(player.queue)/5))
-                
-                self.queue_pos += 1
-                if self.queue_pos == math.ceil(len(player.queue)/5)-1:
-                    self.children[2].disabled = True
-
-                await self.update_embed()
-
-            
-            @discord.ui.button(emoji='⏭️', row=1)
-            async def skip(self, button, interaction):
-                player = self.controller.client.lavalink.player_manager.get(self.ctx.guild.id)
-                await player.skip()
-
-                await self.update_embed()
-            
-            @discord.ui.button(label='\u200b', row=1, disabled=True)
-            async def f1(self, button, interaction):
-                print('prev')
-
-            @discord.ui.button(emoji='⏹️', row=1)
-            async def stop(self, button, interaction):
-                player = self.controller.client.lavalink.player_manager.get(self.ctx.guild.id)
-
-                player.queue = []
-                await player.play()
-
-                await self.update_embed()
-
-            @discord.ui.button(emoji='🔀', style=discord.ButtonStyle.red, row=2)
-            async def mix(self, button, interaction):
-                player = self.controller.client.lavalink.player_manager.get(self.ctx.guild.id)
-
-                if player.shuffle:
-                    self.children[6].style = discord.ButtonStyle.red
-                    player.set_shuffle(False)
-                else:
-                    self.children[6].style = discord.ButtonStyle.green
-                    player.set_shuffle(True)
-
-                await self.update_embed()
-
-            @discord.ui.button(label='\u200b', row=2, disabled=True)
-            async def f2(self, button, interaction):
-                print('prev')
-            
-            @discord.ui.button(emoji='🔁', style=discord.ButtonStyle.red, row=2)
-            async def loop(self, button, interaction):
-                player = self.controller.client.lavalink.player_manager.get(self.ctx.guild.id)
-
-                if player.repeat:
-                    self.children[8].style = discord.ButtonStyle.red
-                    player.set_repeat(False)
-                else:
-                    self.children[8].style = discord.ButtonStyle.green
-                    player.set_repeat(True)
-
-                await self.update_embed()
-
-        menu = Menu(self.client, ctx)
-
-        if menu.message is None:
-            await menu.send_embed()
+                    
+        if self.menu.message is None:
+            await self.menu.send_embed()
         else:
-            await menu.update_embed()
+            await self.menu.update_embed()
+
+
         
 
 def setup(client, id):

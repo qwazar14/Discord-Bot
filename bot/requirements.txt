@@ -1,0 +1,4 @@
+nextcord
+pymysql
+pillow
+lavalink

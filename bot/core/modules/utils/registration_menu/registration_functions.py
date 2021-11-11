@@ -1,5 +1,5 @@
 import nextcord
-from bot.core.configs.util_config import registration_menu
+from configs.util_config import registration_menu
 
 
 async def timeout_error(interaction):

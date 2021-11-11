@@ -3,7 +3,7 @@ import nextcord
 
 from nextcord.ext import commands
 
-from bot.core.configs import roles_config
+from configs import roles_config
 
 
 class Utils(commands.Cog):

@@ -6,7 +6,7 @@ from nextcord.components import SelectOption
 from nextcord.ext import commands
 from nextcord.ui import view
 
-import bot.core.modules.utils.ranks as RankSystem
+import modules.utils.ranks as RankSystem
 
 
 class RankManager(commands.Cog):
