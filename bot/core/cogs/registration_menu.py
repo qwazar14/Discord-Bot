@@ -4,11 +4,9 @@ import nextcord
 import nextcord as discord
 from nextcord.ext import commands
 
-import bot.core.modules.utils.ranks as rank_system
-
-import bot.core.modules.utils.registration_menu.registration_functions as registration_functions
-from bot.core.configs import roles_config
-from bot.core.configs.access_config import settings
+import core.modules.utils.ranks as rank_system
+import core.modules.utils.registration_menu.registration_functions as registration_functions
+from core.configs import roles_config
 
 
 class RegistrationMenu(commands.Cog):
@@ -21,12 +19,16 @@ class RegistrationMenu(commands.Cog):
         class RegistrationMenuButtons(nextcord.ui.View):
             def __init__(self, client, *, timeout=None):
                 super().__init__(timeout=timeout)
+                self.BR_MIN = 1.0
+                self.BR_MAX = 11.3
                 self.client = client
 
-            guild_id = self.client.get_guild(settings['guildId'])
+            guild_id = self.client.guilds[0]
 
+            # Подать заявку в полк start
             @discord.ui.button(label='Подать заявку в полк', style=nextcord.ButtonStyle.green)
             async def join_squadron(self, button, interaction, timeout_error_call=True, guild_id=guild_id):
+
                 user = interaction.user
                 await interaction.response.send_message(content='Введите ник в игре *(у вас есть 30 секунд)* ',
                                                         ephemeral=True)
@@ -49,17 +51,17 @@ class RegistrationMenu(commands.Cog):
                         br_msg_content = await registration_functions.get_user_response(self.client, interaction)
                         try:
                             br_user = await registration_functions.replace_comma_to_do(br_msg_content)
-                        except ValueError as ve:
+                        except ValueError as e:
                             await interaction.edit_original_message(
                                 content='**Используйте только цифры! Начните заново**')
                             timeout_error_call = False
                         if timeout_error_call is not False:
-                            if 1.0 <= br_user <= 11.0:
+                            if self.BR_MIN <= br_user <= self.BR_MAX:
                                 # if br_user
                                 new_nickname = f"[{br_user}] {nickname_user} ({name_user})"
                             else:
                                 await interaction.edit_original_message(
-                                    content='**Боевой рейтинг может быть в диапазоне от 1.0 до 11.0. *Начните заново***')
+                                    content=f'**Боевой рейтинг может быть в диапазоне от {self.BR_MIN} до {self.BR_MAX}. *Начните заново***')
                                 timeout_error_call = False
                             if timeout_error_call is not False:
                                 await interaction.edit_original_message(content='*Регистрация завершена*')
@@ -69,7 +71,8 @@ class RegistrationMenu(commands.Cog):
                                     guild_id.get_role(roles_config.util_categories['optional_category']))
                                 await user.add_roles(
                                     guild_id.get_role(roles_config.util_categories['general_category']))
-                                await user.add_roles(guild_id.get_role(roles_config.optional_category_roles['warthunder']))
+                                await user.add_roles(
+                                    guild_id.get_role(roles_config.optional_category_roles['warthunder']))
                                 await user.add_roles(guild_id.get_role(roles_config.general_category_roles['player']))
                                 await user.remove_roles(
                                     guild_id.get_role(roles_config.general_category_roles['new_player']))
@@ -77,8 +80,11 @@ class RegistrationMenu(commands.Cog):
                     except asyncio.TimeoutError:
                         await registration_functions.timeout_error(interaction)
 
+            # Подать заявку в полк end
+
+            # Друг полка start
             @discord.ui.button(label='Друг полка', style=nextcord.ButtonStyle.blurple)
-            async def squadron_friend(self, button, interaction, timeout_error_call=True):
+            async def squadron_friend(self, interaction, timeout_error_call=True, guild_id=guild_id):
                 user = interaction.user
                 await interaction.response.send_message(content='Введите ник в игре *(у вас есть 30 секунд)* ',
                                                         ephemeral=True)
@@ -110,6 +116,17 @@ class RegistrationMenu(commands.Cog):
                                     new_nickname = f"[{squadron_user}] {nickname_user} ({name_user})"
                                     # await ctx.send()
                                     await user.edit(nick=new_nickname)
+                                    await user.add_roles(
+                                        guild_id.get_role(roles_config.util_categories['optional_category']))
+                                    await user.add_roles(guild_id.get_role(907975449798406216))
+                                    await user.add_roles(
+                                        guild_id.get_role(roles_config.util_categories['general_category']))
+                                    await user.add_roles(
+                                        guild_id.get_role(roles_config.optional_category_roles['warthunder']))
+                                    await user.add_roles(
+                                        guild_id.get_role(roles_config.general_category_roles['player']))
+                                    await user.remove_roles(
+                                        guild_id.get_role(roles_config.general_category_roles['new_player']))
                                     await interaction.edit_original_message(content='*Регистрация завершена*')
                                 else:
                                     await interaction.edit_original_message(
@@ -122,13 +139,24 @@ class RegistrationMenu(commands.Cog):
                             new_nickname = f"[-] {nickname_user} ({name_user})"
                             # await ctx.send(new_nickname)
                             await user.edit(nick=new_nickname)
-                            # await interaction.edit_original_message(content='*Регистрация завершена*')
-                            await registration_functions.end_registration(self, interaction)
+                            await user.add_roles(
+                                guild_id.get_role(roles_config.util_categories['optional_category']))
+                            await user.add_roles(guild_id.get_role(907975449798406216))
+                            await user.add_roles(
+                                guild_id.get_role(roles_config.util_categories['general_category']))
+                            await user.add_roles(
+                                guild_id.get_role(roles_config.optional_category_roles['warthunder']))
+                            await user.add_roles(
+                                guild_id.get_role(roles_config.general_category_roles['player']))
+                            await user.remove_roles(
+                                guild_id.get_role(roles_config.general_category_roles['new_player']))
+                            await interaction.edit_original_message(content='*Регистрация завершена*')
 
                     if timeout_error_call is not False:
                         view_squadron_buttons = SquadronMenu(self.client)
                         await interaction.edit_original_message(content='*Вы состоите в полку?*',
                                                                 view=view_squadron_buttons)
+            # Друг полка end
 
         view = RegistrationMenuButtons(self.client)
         # rank = rank_system.get_member_rank(ctx.author, str=True)
@@ -140,8 +168,7 @@ class RegistrationMenu(commands.Cog):
         embed.add_field(name="Если вы зашли поиграть с друзьями, нажмите кнопку 'Друг полка'",
                         value="Нажимая кнопку вы автоматически соглашаетесь с правилами в канале <#877276991412379709>",
                         inline=False)
-
-        message = await ctx.send(embed=embed, view=view)
+        await ctx.send(embed=embed, view=view)
 
 
 def setup(bot):
