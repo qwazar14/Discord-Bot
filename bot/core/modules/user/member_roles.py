@@ -20,3 +20,4 @@ async def new_player_joined(member, guild_id):
     await member.add_roles(guild_id.get_role(roles_config.util_categories['general_category']))
     await member.add_roles(guild_id.get_role(roles_config.general_category_roles['new_player']))
 
+
